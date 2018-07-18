@@ -17,24 +17,13 @@
 package com.tzutalin.dlibtest;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.hardware.Sensor;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.provider.Settings;
-import android.util.Log;
-import android.util.SparseArray;
 import android.view.WindowManager;
 import android.widget.Toast;
-
-import java.util.HashMap;
 
 /**
  * Created by darrenl on 2016/5/20.
@@ -59,7 +48,8 @@ public class CameraActivity extends Activity {
         if (null == savedInstanceState) {
             getFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.container, CameraConnectionFragment.newInstance())
+                    .replace(R.id.detect_container, CameraConnectionFragment.newInstance())
+                    .replace(R.id.gforce_container, GforceFragment.newInstance())
                     .commit();
         }
    }

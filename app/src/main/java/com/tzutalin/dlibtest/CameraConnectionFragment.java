@@ -19,12 +19,8 @@ package com.tzutalin.dlibtest;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.ImageFormat;
@@ -58,7 +54,6 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -75,11 +70,11 @@ import timber.log.Timber;
 public class CameraConnectionFragment extends Fragment {
 
     private static final String TAG = "CameraConnectionFragment";
-    // 카메라 미리보기 크기가 DESIRED_SIZE x DESIRED_SIZE 사각형을 포함 할 수있는 픽셀 크기로 가장 작은 프레임으로 선택됨
-    private static final int MINIMUM_PREVIEW_SIZE = 500; //500; //320;
 
-//    private TrasparentTitleView mScoreView;
-    private TextView mTextView;
+    /**
+     * 카메라 미리보기 크기가 DESIRED_SIZE x DESIRED_SIZE 사각형을 포함 할 수있는 픽셀 크기로 가장 작은 프레임으로 선택됨
+     */
+    private static final int MINIMUM_PREVIEW_SIZE = 500; //320;
 
     /* Conversion from screen rotation to JPEG orientation. */
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -239,10 +234,10 @@ public class CameraConnectionFragment extends Fragment {
     private Handler sensorHandler;
 
     //Using the Accelometer & Gyroscoper
-    private SensorManager mSensorManager = null;
+    private SensorManager mSensorManager;
     private SensorEventListener mSensorLis;
-    private Sensor mGgyroSensor = null;
-    private Sensor mLightSensor = null;
+    private Sensor mGgyroSensor;
+    private Sensor mLightSensor;
 
     // Shows a {@link Toast} on the UI thread. text The message to show
     private void showToast(final String text) {
@@ -340,16 +335,13 @@ public class CameraConnectionFragment extends Fragment {
     @Override
     public View onCreateView(
             final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.camera_connection_fragment, container, false);
+        return inflater.inflate(R.layout.fragment_camera_connection, container, false);
     }
 
     @Override
     public void onViewCreated(final View view, final Bundle savedInstanceState) {
         // 카메라의 화면을 보여주는 TextureView
-        // 카메라의 기능을 하는 Preview
         textureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        mTextView = (TextView)view.findViewById(R.id.textView);
-        //mScoreView = (TrasparentTitleView) view.findViewById(R.id.results); // time cost
     }
 
     @Override
@@ -426,11 +418,11 @@ public class CameraConnectionFragment extends Fragment {
 
             // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
             // bus' bandwidth limitation, resulting in gorgeous previews but the storage of garbage capture data.
-            previewSize =
-                    chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class), width, height, largest);
+            previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class), width, height, largest);
 
             // We fit the aspect ratio of TextureView to the size of preview we picked.
             final int orientation = getResources().getConfiguration().orientation;
+
             if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 textureView.setAspectRatio(previewSize.getWidth(), previewSize.getHeight());
             } else {
@@ -438,7 +430,6 @@ public class CameraConnectionFragment extends Fragment {
             }
 
             CameraConnectionFragment.this.cameraId = cameraId;
-
             return;
 
         } catch (final CameraAccessException e) {
@@ -533,7 +524,11 @@ public class CameraConnectionFragment extends Fragment {
 
             inferenceThread.join();
             inferenceThread = null;
-            inferenceThread = null;
+            inferenceHandler = null;
+
+            sensorThread.join();
+            sensorThread = null;
+            sensorHandler = null;
         } catch (final InterruptedException e) {
             Log.i(TAG, "error", e);
         }
@@ -625,7 +620,7 @@ public class CameraConnectionFragment extends Fragment {
             Log.i(TAG, "Exception!", e);
         }
 
-        mOnGetPreviewListener.initialize(getActivity().getApplicationContext(), getActivity().getAssets(), mTextView, inferenceHandler);
+        mOnGetPreviewListener.initialize(getActivity().getApplicationContext(), getActivity().getAssets(), inferenceHandler);
     }
 
     /**
@@ -653,6 +648,7 @@ public class CameraConnectionFragment extends Fragment {
                     Math.max(
                             (float) viewHeight / previewSize.getHeight(),
                             (float) viewWidth / previewSize.getWidth());
+
             matrix.postScale(scale, scale, centerX, centerY);
             matrix.postRotate(90 * (rotation - 2), centerX, centerY);
         } else if (Surface.ROTATION_180 == rotation) {

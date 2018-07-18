@@ -12,6 +12,7 @@ import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
@@ -166,7 +167,7 @@ public class FloatingCameraWindow {
     }
 
     @UiThread
-    private final class FloatCamView extends FrameLayout {
+    private final class FloatCamView extends FrameLayout  {
         private WeakReference<FloatingCameraWindow> mWeakRef;
         private static final int MOVE_THRESHOLD = 10;
         private int mLastX;
@@ -185,12 +186,12 @@ public class FloatingCameraWindow {
             // mLayoutInflater = LayoutInflater.from(context);
             mLayoutInflater = (LayoutInflater) window.mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             FrameLayout body = (FrameLayout) this;
-            body.setOnTouchListener(new OnTouchListener() {
+            /*body.setOnTouchListener(new OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
                     return false;
                 }
-            });
+            });*/
 
             View floatView = mLayoutInflater.inflate(R.layout.cam_window_view, body, true);
             mColorView = (ImageView) findViewById(R.id.imageView_c);

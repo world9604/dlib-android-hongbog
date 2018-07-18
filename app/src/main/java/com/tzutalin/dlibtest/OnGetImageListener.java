@@ -27,6 +27,7 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.view.Display;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import com.tzutalin.dlib.Constants;
@@ -69,14 +70,14 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private FaceDet mFaceDet;
 
     //private TrasparentTitleView mTransparentTitleView;  // timecost를 보여주기위해
-    private TextView mTextView;
-    //private FloatingCameraWindow mWindow;               // Landmark point를 보여주는 preview
+
+//    private FloatingCameraWindow mWindow;               // Landmark point를 보여주는 preview
 
     private Paint mFaceLandmardkPaint;
 
     private HttpConnection httpConn = HttpConnection.getInstance();
 
-    private SensorDTO mSensorDTO= new SensorDTO();
+    private SensorDTO mSensorDTO = new SensorDTO();
 
     private SensorChangeHandler mSensorChangeHandler;
 
@@ -87,13 +88,12 @@ public class OnGetImageListener implements OnImageAvailableListener {
         SensorListener.setHandler(mSensorChangeHandler);
     }
 
-    public void initialize(final Context context, final AssetManager assetManager, TextView textView, final Handler handler) {
+    public void initialize(final Context context, final AssetManager assetManager, final Handler handler) {
         Log.i(TAG,"1 initialize()");
         this.mContext = context;
-        this.mTextView = textView;
         this.mInferenceHandler = handler;
         mFaceDet = new FaceDet(Constants.getFaceShapeModelPath());
-        //mWindow = new FloatingCameraWindow(mContext);
+//        mWindow = new FloatingCameraWindow(mContext);
 
         mFaceLandmardkPaint = new Paint();
         mFaceLandmardkPaint.setColor(Color.GREEN);
@@ -160,7 +160,6 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
         final Canvas canvas = new Canvas(dst);
         canvas.drawBitmap(src, matrix, null);
-
     }
 
     @Override
@@ -305,8 +304,6 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
                                     Dlog.d(sb.toString());
 
-                                    mTextView.setText(sb.toString());
-
                                     if(bitmapCropped.compress(Bitmap.CompressFormat.PNG, 100, baos)){
                                         byte[] imageBytes = baos.toByteArray();
 
@@ -318,13 +315,10 @@ public class OnGetImageListener implements OnImageAvailableListener {
                                         } catch (IOException e) {
                                             e.printStackTrace();
                                         }
-
                                     }
 
                                 }catch (IllegalArgumentException e){
-
                                     Dlog.d("Exception Raise : " + e.getMessage());
-
                                 }
 
                                 // 이미지 파일로 저장 saveBitmap by png
@@ -333,11 +327,10 @@ public class OnGetImageListener implements OnImageAvailableListener {
                                 String time = String.valueOf((endTime - startTime) / 10f) ;
                                 ImageUtils.saveBitmap(bitmapCropped, time);
                                 startTime = System.currentTimeMillis();
-
                             }
                         }
 
-                        //mWindow.setRGBBitmap(mCroppedBitmap);
+//                        mWindow.setRGBBitmap(mCroppedBitmap);
                         mIsComputing = false;
                     }
                 });
@@ -384,6 +377,6 @@ public class OnGetImageListener implements OnImageAvailableListener {
                     break;
             }
         }
-    };
+    }
 
 }

@@ -44,6 +44,8 @@ public class SensorListener implements SensorEventListener {
 
             mSensorDto.setBr(String.valueOf(event.values[0]));
 
+            mHandler.obtainMessage(1, mSensorDto).sendToTarget();
+
         }else if(event.sensor.getType() == Sensor.TYPE_GYROSCOPE){
 
             /* 각 축의 각속도 성분을 받는다. */
@@ -71,9 +73,17 @@ public class SensorListener implements SensorEventListener {
             mSensorDto.setPitch(String.format("%.1f", pitch*RAD2DGR));
             mSensorDto.setRoll(String.format("%.1f", roll*RAD2DGR));
             mSensorDto.setYaw(String.format("%.1f", yaw*RAD2DGR));
-        }
 
-        mHandler.obtainMessage(1, mSensorDto).sendToTarget();
+            mHandler.obtainMessage(1, mSensorDto).sendToTarget();
+
+        }else if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
+
+            mSensorDto.setAccelX(event.values[0]);
+            mSensorDto.setAccelZ(event.values[2]);
+
+            mHandler.obtainMessage(0, mSensorDto).sendToTarget();
+
+        }
     }
 
     @Override

@@ -13,10 +13,26 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/container"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000"
-    tools:context="com.tzutalin.dlibtest.CameraActivity" />
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:id="@+id/detect_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000"
+        android:layout_weight=".7"/>
+
+   <FrameLayout
+        android:id="@+id/gforce_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight=".3"
+        android:layout_alignParentBottom="true"/>
+
+</LinearLayout>
+
+
