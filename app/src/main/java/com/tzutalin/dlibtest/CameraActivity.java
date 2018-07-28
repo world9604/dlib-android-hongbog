@@ -18,24 +18,38 @@ package com.tzutalin.dlibtest;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
+
+import com.hongbog.view.GforceFragment;
+import com.hongbog.view.ResultTestActivity;
+import com.hongbog.view.StateFragment;
+
+import java.util.ArrayList;
 
 /**
  * Created by darrenl on 2016/5/20.
  */
 public class CameraActivity extends Activity {
 
+    //private static final String TAG = "CameraActivity";
+    private static final String TAG = "i99";
+
     private static int OVERLAY_PERMISSION_REQ_CODE = 1;
+
+    private long startTime;
+
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+//        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_camera);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -45,14 +59,44 @@ public class CameraActivity extends Activity {
             }
         }
 
+        startTime = System.currentTimeMillis();
+
         if (null == savedInstanceState) {
-            getFragmentManager()
+           /* getFragmentManager()
                     .beginTransaction()
                     .replace(R.id.detect_container, CameraConnectionFragment.newInstance())
                     .replace(R.id.gforce_container, GforceFragment.newInstance())
-                    .commit();
+                    .replace(R.id.state_container, StateFragment.newInstance())
+                    .commit();*/
         }
    }
+
+
+    public void goMain(Bitmap bitmap_left[], Bitmap bitmap_right[]) {
+
+        ArrayList<ParcelBitmap> left_lst = new ArrayList<>();
+        ArrayList<ParcelBitmap> right_lst = new ArrayList<>();
+
+        for (int i = 0; i <5; i++) {
+            left_lst.add(new ParcelBitmap( bitmap_left[i] ));
+            right_lst.add(new ParcelBitmap( bitmap_right[i] ));
+        }
+
+        // 리스트에 이미지 넣기
+        Intent intent = new Intent(getApplicationContext(), ResultTestActivity.class);
+        Bundle bundle = new Bundle();
+
+        // 데이터 전달
+        bundle.putParcelableArrayList("LeftEyeList", left_lst);       // ("변수명", 넘기는 값)
+        bundle.putParcelableArrayList("RightEyeList", right_lst);       // ("변수명", 넘기는 값)
+        intent.putExtras(bundle);
+        finish();
+        startActivity(intent); // 명시적 인텐트(Activity 시작)
+
+        long endTime = System.currentTimeMillis();
+        long verificationtime = (endTime-startTime)/100;
+        Log.i(TAG, "Time= "+String.valueOf(verificationtime));
+    }
 
     @Override
     protected void onStart() {
@@ -88,5 +132,16 @@ public class CameraActivity extends Activity {
             }
         }
     }
+
+    /*
+    // Starts a background thread and its Handler
+    private void startBackgroundThread() {
+
+        inferenceThread = new HandlerThread("InferenceThread");
+        inferenceThread.start();
+        inferenceHandler = new Handler(inferenceThread.getLooper());
+
+    }
+    */
 
 }

@@ -1,12 +1,12 @@
 package com.tzutalin.dlib;
 
-/**
- * Created by Tzutalin on 2015/10/20.
- */
-
+import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.util.Log;
 
 import java.util.ArrayList;
+
+
 
 /**
  * A VisionDetRet contains all the information identifying the location and confidence value of the detected object in a bitmap.
@@ -36,6 +36,7 @@ public final class VisionDetRet {
     public int mWidthLeft;
 
 
+
     private ArrayList<Point> mLandmarkPoints = new ArrayList<>();
 
 
@@ -51,6 +52,51 @@ public final class VisionDetRet {
         mBottom = b;
         mConfidence = confidence;
     }
+/*
+    public void CheckQality(Bitmap bitCrop_L, Bitmap bitCrop_R){
+
+         //제외할 조건들: blur, ear, rotation
+        // Bitmap -> Mat(matLeft, matRight)
+        Size imgLeft = new Size(bitCrop_L.getWidth(), bitCrop_L.getHeight());
+        Mat matLeft = new Mat (bitCrop_L.getWidth(), bitCrop_L.getHeight(), CV_32F);  //CV_8UC1
+        Utils.bitmapToMat(bitCrop_L, matLeft);
+
+        //Size imgRight = new Size(bitCrop_R.getWidth(), bitCrop_R.getHeight());
+        //Mat matRight = new Mat (imgRight, CV_32F);
+        //Utils.bitmapToMat(bitCrop_R, matRight);
+
+        // blur : cv2.Laplacian(image, cv2.CV_64F).var()--------------------
+        MatOfDouble mean = new MatOfDouble();;
+        MatOfDouble std = new MatOfDouble();;
+
+        Mat matLeftGray = new Mat();
+        Imgproc.cvtColor(matLeft, matLeftGray, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.Laplacian(matLeftGray, matLeftGray, CV_16S); //-> Gray
+        Core.meanStdDev(matLeftGray, mean, std);
+
+        //Imgproc.Laplacian(matLeft,matLeft,CV_64F);//-> Color
+        //Core.meanStdDev(matLeft, mean, std);
+
+        this.mLeftBlur = Math.pow(std.get(0,0)[0], 2);  //double stdDev = std.get(0,0)[0];
+
+
+
+        // ear: ----------------------------
+
+
+        // rotation: ------------------------
+
+
+
+        if(1==1){
+            this.accept = true;
+        }
+        else {
+            this.accept = false;
+        }
+    }
+    */
+
 
     /**
      * @return The X coordinate of the left side of the result

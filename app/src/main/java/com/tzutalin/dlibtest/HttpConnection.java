@@ -52,25 +52,4 @@ public class HttpConnection {
         return null;
     }
 
-    /*public String requestUploadPhoto(SensorDTO sensorVales,  Callback callback) {
-        try {
-            RequestBody requestBody = new MultipartBody.Builder().setType(MultipartBody.FORM)
-                    .addFormDataPart("photo", label + ".png", RequestBody.create(MediaType.parse("image/png"), BitmapBytes))
-                    .build();
-
-            String url = "http://192.168.0.2:8080/uploadImage.do";
-            okhttp3.Request request = new okhttp3.Request.Builder()
-                    .url(url)
-                    .post(requestBody)
-                    .build();
-
-            client.newCall(request).enqueue(callback);
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-        }
-        return null;
-    }*/
-
 }

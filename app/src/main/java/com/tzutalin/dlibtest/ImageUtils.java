@@ -49,8 +49,8 @@ public class ImageUtils {
         String fname = ".png";
         Date today = new Date();
         String str = today.toString();
-
-        fname = str+"t"+ stringTime +fname;
+        fname = "t"+ stringTime +fname;
+        //fname = str+"t"+ stringTime +fname;
 
         final File file = new File(myDir, fname);
         if (file.exists()) {

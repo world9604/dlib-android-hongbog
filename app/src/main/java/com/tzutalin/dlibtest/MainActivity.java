@@ -1,29 +1,38 @@
-/*
-*  Copyright (C) 2015-present TzuTaLin
-*/
-
 package com.tzutalin.dlibtest;
 
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.design.widget.FloatingActionButton;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import com.hongbog.view.InfoActivity;
+
+import java.util.ArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import hugo.weaving.DebugLog;
 
 public class MainActivity extends AppCompatActivity {
-    private static final int REQUEST_CODE_PERMISSION = 2;
 
     private static final String TAG = "MainActivity";
+    private static final int REQUEST_CODE_PERMISSION = 2;
+    private Toolbar mToolbar;
     // Storage Permissions
     private static String[] PERMISSIONS_REQ = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -31,58 +40,32 @@ public class MainActivity extends AppCompatActivity {
             Manifest.permission.CAMERA
     };
 
-    // UI
-    private FloatingActionButton mFabCamActionBt;
-    private Toolbar mToolbar;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         setSupportActionBar(mToolbar);
+
         // Just use hugo to print log
         isExternalStorageWritable();
         isExternalStorageReadable();
 
         // For API 23+ you need to request the read/write permissions even if they are already in your manifest.
         int currentapiVersion = android.os.Build.VERSION.SDK_INT;
-
         if (currentapiVersion >= Build.VERSION_CODES.M) {
-            verifyPermissions(this);
-        }
-
-        //setupUI();
-    }
-
-    /*protected void setupUI() {
-        mFabCamActionBt = (FloatingActionButton) findViewById(R.id.fab_cam);
-
-        mFabCamActionBt.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, CameraActivity.class));
+            if(verifyPermissions(this)){
+                Intent intent = new Intent(this, CameraActivity.class);
+                finish();
+                startActivity(intent);
             }
-        });
-    }*/
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        startActivity(new Intent(MainActivity.this, CameraActivity.class));
-        finish();
+        }
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-    }
 
-    /**
-     * Checks if the app has permission to write to device storage or open camera
-     * If the app does not has permission then the user will be prompted to grant permissions
-     *
-     * @param activity
+    /*
+     *  Checks if the app has permission to write to device storage or open camera
+     *  If the app does not has permission then the user will be prompted to grant permissions
      */
     @DebugLog
     private static boolean verifyPermissions(Activity activity) {
@@ -106,6 +89,35 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_CODE_PERMISSION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    if (grantResults.length > 1
+                            && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+
+                        Intent intent = new Intent(this, CameraActivity.class);
+                        finish();
+                        startActivity(intent);
+
+                    }else{
+                        Toast.makeText(MainActivity.this, "승인 실패", Toast.LENGTH_LONG).show();
+                    }
+
+                } else {
+                    Toast.makeText(MainActivity.this, "승인 실패", Toast.LENGTH_LONG).show();
+                }
+                return;
+            }
+        }
+    }
+
+
     /* Checks if external storage is available for read and write */
     @DebugLog
     private boolean isExternalStorageWritable() {
@@ -115,6 +127,7 @@ public class MainActivity extends AppCompatActivity {
         }
         return false;
     }
+
 
     /* Checks if external storage is available to at least read */
     @DebugLog
@@ -126,5 +139,4 @@ public class MainActivity extends AppCompatActivity {
         }
         return false;
     }
-
 }

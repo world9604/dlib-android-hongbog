@@ -54,7 +54,7 @@ public class AutoFitTextureView extends TextureView {
     mRatioWidth = width;
     mRatioHeight = height;
     // onMeasure을 재호출 하여 layout size를 조절한다.
-    // requestLayout();
+    requestLayout();
   }
 
   @Override

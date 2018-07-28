@@ -52,15 +52,15 @@ import okhttp3.Response;
 public class OnGetImageListener implements OnImageAvailableListener {
 
     private static final int INPUT_SIZE = 500;//500; //224;
-    private static final String TAG = "OnGetImageListener";
+    private static final String TAG = "i99";
 
     private int mScreenRotation = 90;
-
     private int mPreviewWdith = 0;
     private int mPreviewHeight = 0;
     private byte[][] mYUVBytes;
     private int[] mRGBBytes = null;
     private Bitmap mRGBframeBitmap = null;
+    private Bitmap mBitmap = null;
     private Bitmap mCroppedBitmap = null;
 
     private boolean mIsComputing = false;
@@ -69,27 +69,28 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private Context mContext;
     private FaceDet mFaceDet;
 
-    //private TrasparentTitleView mTransparentTitleView;  // timecost를 보여주기위해
+    private TextView mTextView;
 
+    int mNumCrop =0;
+    Bitmap bitmap_left[] = new Bitmap[6];
+    Bitmap bitmap_right[]= new Bitmap[6];
+
+    //private TrasparentTitleView mTransparentTitleView;  // timecost를 보여주기위해
 //    private FloatingCameraWindow mWindow;               // Landmark point를 보여주는 preview
 
     private Paint mFaceLandmardkPaint;
 
     private HttpConnection httpConn = HttpConnection.getInstance();
-
     private SensorDTO mSensorDTO = new SensorDTO();
-
     private SensorChangeHandler mSensorChangeHandler;
 
     public OnGetImageListener() {
-        Dlog.d("OnGetImageListener::Construct");
-
         mSensorChangeHandler = new SensorChangeHandler();
         SensorListener.setHandler(mSensorChangeHandler);
     }
 
-    public void initialize(final Context context, final AssetManager assetManager, final Handler handler) {
-        Log.i(TAG,"1 initialize()");
+
+    public void initialize(final Context context, final AssetManager assetManager, final Handler handler, final String label) {
         this.mContext = context;
         this.mInferenceHandler = handler;
         mFaceDet = new FaceDet(Constants.getFaceShapeModelPath());
@@ -99,35 +100,29 @@ public class OnGetImageListener implements OnImageAvailableListener {
         mFaceLandmardkPaint.setColor(Color.GREEN);
         mFaceLandmardkPaint.setStrokeWidth(2);
         mFaceLandmardkPaint.setStyle(Paint.Style.STROKE);
+
+        mSensorDTO.setLabel(label);
     }
 
-    public void deInitialize() {
-        Log.i(TAG,"deInitialize()");
-        Dlog.d("CameraActivty::deInitialize()");
 
+    public void deInitialize() {
         synchronized (OnGetImageListener.this) {
             if (mFaceDet != null) {
                 mFaceDet.release();
             }
-
-            /*if (mWindow != null) {
-                mWindow.release();
-            }*/
+            /*if (mWindow != null) { mWindow.release(); }*/
         }
     }
 
-    private void drawResizedBitmap(final Bitmap src, final Bitmap dst) {
 
-        Log.i(TAG,"3 drawResizedBitmap()");
+    private void drawResizedBitmap(final Bitmap src, final Bitmap dst) {
         Display getOrient = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
         int orientation = Configuration.ORIENTATION_UNDEFINED;
         Point point = new Point();
         getOrient.getSize(point);
         int screen_width = point.x;
         int screen_height = point.y;
-
-        // Log.i(TAG, String.format("screen size (%d,%d)", screen_width, screen_height));  // screen size (1080,1920)
-
+       // Log.i(TAG, String.format("screen size (%d,%d)", screen_width, screen_height));  // screen size (1080,1920)
         if (screen_width < screen_height) {
             orientation = Configuration.ORIENTATION_PORTRAIT;
             mScreenRotation = 270;
@@ -138,29 +133,24 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
         Assert.assertEquals(dst.getWidth(), dst.getHeight());
         final float minDim = Math.min(src.getWidth(), src.getHeight());
-
         final Matrix matrix = new Matrix();
 
         // We only want the center square out of the original rectangle.
         final float translateX = -Math.max(0, (src.getWidth() - minDim));
         final float translateY = -Math.max(0, (src.getHeight() - minDim));
-        // Log.i(TAG, "translate "+ String.valueOf(translateX)+", "+String.valueOf(translateY));    //translate -240.0, -0.0
         matrix.preTranslate(translateX, translateY);
-
         float scaleFactor = dst.getHeight() / minDim;
-        // Log.i(TAG, "scaleFactor "+ String.valueOf(scaleFactor)); // caleFactor 0.6944444
         matrix.postScale(scaleFactor, scaleFactor);
-
         // Rotate around the center if necessary.
         if (mScreenRotation != 0) {
             matrix.postTranslate(-dst.getWidth() / 2.0f, -dst.getHeight() / 2.0f);
             matrix.postRotate(mScreenRotation);
             matrix.postTranslate(dst.getWidth() / 2.0f, dst.getHeight() / 2.0f);
         }
-
         final Canvas canvas = new Canvas(dst);
         canvas.drawBitmap(src, matrix, null);
     }
+
 
     @Override
     public void onImageAvailable(final ImageReader reader) {
@@ -169,29 +159,26 @@ public class OnGetImageListener implements OnImageAvailableListener {
             image = reader.acquireLatestImage();    // ImageReader 에서image 를 얻어온다
 
             if (image == null) {
-                Log.i(TAG, "onImageAvailable-1 image null");
                 return;
             }
-            // No mutex needed as this method is not reentrant.
             if (mIsComputing) {
-                Log.i(TAG, "onImageAvailable-2 mIsComputing");
                 image.close();
                 return;
             }
             mIsComputing = true;
 
             final Plane[] planes = image.getPlanes();
+            Log.i(TAG, String.format("image size (%d,%d)", image.getWidth(), image.getHeight())); //Original image size (2592,1944) -> 500만 화소
 
             // 해상도가 알려진 경우 저장소 비트 맵을 한 번 초기화
             if (mPreviewWdith != image.getWidth() || mPreviewHeight != image.getHeight()) {
-                Log.i(TAG, "onImageAvailable-0 초기화");
                 mPreviewWdith = image.getWidth();
                 mPreviewHeight = image.getHeight();
 
-                Log.i(TAG, String.format("0 mPreview size (%d,%d)", mPreviewWdith, mPreviewHeight));
+                Log.i(TAG, String.format("Preview size (%d,%d)", mPreviewWdith, mPreviewHeight));
                 mRGBBytes = new int[mPreviewWdith * mPreviewHeight];
                 mRGBframeBitmap = Bitmap.createBitmap(mPreviewWdith, mPreviewHeight, Config.ARGB_8888);
-                mCroppedBitmap = Bitmap.createBitmap(INPUT_SIZE, INPUT_SIZE, Config.ARGB_8888);
+                mBitmap = Bitmap.createBitmap(INPUT_SIZE, INPUT_SIZE, Config.ARGB_8888);
 
                 mYUVBytes = new byte[planes.length][];
                 for (int i = 0; i < planes.length; ++i) {
@@ -206,12 +193,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
             final int yRowStride = planes[0].getRowStride();
             final int uvRowStride = planes[1].getRowStride();
             final int uvPixelStride = planes[1].getPixelStride();
-            Log.i(TAG, "onImageAvailable-3 convertYUV420ToARGB8888");
-            ImageUtils.convertYUV420ToARGB8888(
-                    mYUVBytes[0],
-                    mYUVBytes[1],
-                    mYUVBytes[2],
-                    mRGBBytes,
+            ImageUtils.convertYUV420ToARGB8888( mYUVBytes[0], mYUVBytes[1], mYUVBytes[2], mRGBBytes,
                     mPreviewWdith,
                     mPreviewHeight,
                     yRowStride,
@@ -230,68 +212,84 @@ public class OnGetImageListener implements OnImageAvailableListener {
         }
 
         mRGBframeBitmap.setPixels(mRGBBytes, 0, mPreviewWdith, 0, 0, mPreviewWdith, mPreviewHeight);
-        drawResizedBitmap(mRGBframeBitmap, mCroppedBitmap);
-
-        Log.i(TAG, String.format("3 mRGBBytes size (%d,%d)", mPreviewWdith, mPreviewHeight));
+        drawResizedBitmap(mRGBframeBitmap, mBitmap);
 
         mInferenceHandler.post(
                 new Runnable() {
                     @Override
                     public void run() {
-                        Log.i(TAG, "3- mInferenceHandler");
-                        if (!new File(Constants.getFaceShapeModelPath()).exists()) {
-                            Log.i(TAG,"Copying landmark model to " + Constants.getFaceShapeModelPath());
-                        }
                         List<VisionDetRet> results;
                         synchronized (OnGetImageListener.this) {
-                            results = mFaceDet.detect(mCroppedBitmap);
+                            results = mFaceDet.detect(mBitmap);
                         }
-
-                        // Draw on bitmap
                         if (results != null) {
-                            Log.i(TAG, "3- mInferenceHandler -results mFaceDet");
-
                             for (final VisionDetRet ret : results) {
-
-                                long startTime = System.currentTimeMillis();
-
+                                /*
                                 //detecting 이미지를 보여준다
-                                /*float resizeRatio = 1.0f;
-                                Rect bounds = new Rect();
-                                bounds.left = (int) (ret.getLeft() * resizeRatio);
-                                bounds.top = (int) (ret.getTop() * resizeRatio);
-                                bounds.right = (int) (ret.getRight() * resizeRatio);
-                                bounds.bottom = (int) (ret.getBottom() * resizeRatio);
-                                Canvas canvas = new Canvas(mCroppedBitmap);
-                                canvas.drawRect(bounds, mFaceLandmardkPaint);
-                                // Draw landmark
+                                Canvas canvas = new Canvas(mBitmap);
                                 ArrayList<Point> landmarks = ret.getFaceLandmarks();
                                 for (int j=0; j<landmarks.size(); j++) {
                                     Point point = landmarks.get(j);
-                                    //for (Point point : landmarks) {
-                                    int pointX = (int) (point.x * resizeRatio);
-                                    int pointY = (int) (point.y * resizeRatio);
                                     if(j>35  && j<42) {     // 왼쪽(36 ~ 41)
-                                        canvas.drawCircle(pointX, pointY, 2, mFaceLandmardkPaint);
+                                        canvas.drawCircle(point.x , point.y, 2, mFaceLandmardkPaint);
                                     }if(j>41  && j<48){      //오른쪽(42 ~ 47)
-                                        canvas.drawCircle(pointX, pointY, 3, mFaceLandmardkPaint);
+                                        canvas.drawCircle(point.x , point.y, 3, mFaceLandmardkPaint);
                                     }
-                                }*/
+                                }
+                                */
 
-                                // 이미지 crop
-                                float scale = 1.0f;
-                                int stx = (int)(ret.mStartRightX *scale);
-                                int xty = (int)(ret.mStartRightY *scale);
-                                int width = (int)(ret.mWidthRight*scale);
-                                int height = (int)(ret.mHightRight*scale);
-                                Log.i(TAG,"3 all image "+String.valueOf(mCroppedBitmap.getWidth()) +", "+ String.valueOf(mCroppedBitmap.getHeight())+")");
-                                Log.i(TAG,"3 Eye crop ("+  String.valueOf(width) +", "+ String.valueOf(height)+")");
+                                CheckQuality quality = new CheckQuality(mBitmap, ret);
+                                quality.setImageScope(false);
+                                quality.setAccept(false);
 
-                                Bitmap bitmapCropped = null;
+                                /* -----------------------
+                                * *      눈 영역만 crop
+                                * * ----------------------- */
+                                Bitmap bitCrop_L = Bitmap.createBitmap(mBitmap, ret.mStartLeftX, ret.mStartLeftY, ret.mWidthLeft, ret.mHightLeft);
+                                Bitmap bitCrop_R = Bitmap.createBitmap(mBitmap, ret.mStartRightX, ret.mStartRightY, ret.mWidthRight, ret.mHightRight);
+
+                                Log.i(TAG, String.format("%d: left size (%d,%d)", INPUT_SIZE, bitCrop_L.getWidth(), bitCrop_L.getHeight()));
+                                //Log.i(TAG, String.format("%d: right size (%d,%d)", INPUT_SIZE, bitCrop_L.getWidth(), bitCrop_L.getHeight()));
+
+                                // 몇가지 조건 만족여부 조사
+                                quality.isImageScope();
+                                quality.isBlur(bitCrop_L, bitCrop_R);
+
+                                //if (quality.isAccept() == true && quality.isImageScope()==true) {
+
+                                int sizeLeft = (bitCrop_L.getWidth()* bitCrop_L.getHeight());
+                                int sizeRight = (bitCrop_L.getWidth()* bitCrop_L.getHeight());
+
+                                //if(sizeLeft<40000 && sizeRight<40000){
+
+                                //crop 한 눈 영상 파일로 저장
+                                String left = "left_" + String.valueOf(quality.mBlur_L);
+                                String right = "right_" + String.valueOf(quality.mBlur_R);
+                                //String right = "right_"+String.valueOf(mNumCrop);
+                                //String left = "left_"+String.valueOf(mNumCrop) ;
+
+                                //임시 주석 taein
+                                /*ImageUtils.saveBitmap(bitCrop_R, right);
+                                ImageUtils.saveBitmap(bitCrop_L, left);*/
 
                                 try{
-                                    bitmapCropped = Bitmap.createBitmap(mCroppedBitmap, stx ,xty, width, height);
+                                    bitmap_right[mNumCrop] = bitCrop_R;
+                                    bitmap_left[mNumCrop] = bitCrop_L;
+                                }catch (ArrayIndexOutOfBoundsException ex){
+                                    ex.printStackTrace();
+                                }
 
+                                mNumCrop = mNumCrop + 1 ;
+
+                                //}
+                                //else{
+                                  //  Log.i(TAG,"Intent에 Bitmap을 put시킬 때, 안드로이드에서는 이미지 크기가 40KB로 제한되어 있다.");
+                                //}
+
+                                //}
+                                /*
+                                try{
+                                    //bitmapCropped = Bitmap.createBitmap(mBitmap, stx ,xty, width, height);
                                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
                                     StringBuilder sb = new StringBuilder();
@@ -304,7 +302,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
                                     Dlog.d(sb.toString());
 
-                                    if(bitmapCropped.compress(Bitmap.CompressFormat.PNG, 100, baos)){
+                                    if(mBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)){
                                         byte[] imageBytes = baos.toByteArray();
 
                                         //String encodedImage = Base64.encodeToString(imageBytesimageBytes, Base64.DEFAULT);
@@ -320,17 +318,28 @@ public class OnGetImageListener implements OnImageAvailableListener {
                                 }catch (IllegalArgumentException e){
                                     Dlog.d("Exception Raise : " + e.getMessage());
                                 }
-
-                                // 이미지 파일로 저장 saveBitmap by png
-                                long endTime = System.currentTimeMillis();
-                                //mTransparentTitleView.setText("Time cost: " + String.valueOf((endTime - startTime) / 1000f) + " sec");
-                                String time = String.valueOf((endTime - startTime) / 10f) ;
-                                ImageUtils.saveBitmap(bitmapCropped, time);
-                                startTime = System.currentTimeMillis();
+                                */
                             }
                         }
+                        /*
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        StringBuilder sb = new StringBuilder();
+                        sb.setLength(0);
+                        sb.append(" [roll] : " + mSensorDTO.getRoll())
+                                .append(" [pitch] : " + mSensorDTO.getPitch())
+                                .append(" [yaw] : " + mSensorDTO.getYaw())
+                                .append(" [br] : " + mSensorDTO.getBr());
+                        Dlog.d(sb.toString());
+                        //mTextView.setText(sb.toString());
+                        if(mBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)){
+                            byte[] imageBytes = baos.toByteArray();
+                            //String encodedImage = Base64.encodeToString(imageBytesimageBytes, Base64.DEFAULT);
+                            sendPngAndSensorData(imageBytes, "abc", mSensorDTO);
+                        }
+                        */
 
-//                        mWindow.setRGBBitmap(mCroppedBitmap);
+                        Bitmap newbitmap = Bitmap.createBitmap(mBitmap, 0 ,mBitmap.getHeight()/2-50, mBitmap.getWidth(), mBitmap.getHeight()/2+50);
+                        //mWindow.setRGBBitmap(newbitmap);
                         mIsComputing = false;
                     }
                 });

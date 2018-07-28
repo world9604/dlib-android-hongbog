@@ -1,3 +1,8 @@
 <resources>
-    <string name="app_name">dlib-android-application</string>
+    <string name="app_name">EyeVerification</string>
+    <string name="textview_label">이름을 입력해주세요</string>
+    <string name="button">확인</string>
+    <string name="left_guide_eye">왼쪽 가이드 눈</string>
+    <string name="right_guide_eye">오른쪽 가이드 눈</string>
+    <string name="state_text">눈 모양에 눈을 되주세요</string>
 </resources>

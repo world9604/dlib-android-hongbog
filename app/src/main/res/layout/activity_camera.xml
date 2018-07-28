@@ -13,26 +13,56 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/relativeLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <FrameLayout
+  <!--  <fragment
+        android:name="com.hongbog.view.StateFragment"
+        android:id="@+id/state_container"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <fragment
+        android:name="com.tzutalin.dlibtest.CameraConnectionFragment"
         android:id="@+id/detect_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#000"
-        android:layout_weight=".7"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
-   <FrameLayout
+    <fragment
+        android:name="com.hongbog.view.GforceFragment"
         android:id="@+id/gforce_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight=".3"
-        android:layout_alignParentBottom="true"/>
+        android:layout_height="100dp"
+        app:layout_constraintBottom_toBottomOf="parent" />-->
 
-</LinearLayout>
+  <fragment
+      android:name="com.hongbog.view.StateFragment"
+      android:id="@+id/state_container"
+      android:layout_width="match_parent"
+      android:layout_height="100dp"
+      android:layout_alignParentTop="true"/>
 
+  <fragment
+      android:id="@+id/detect_container"
+      android:name="com.tzutalin.dlibtest.CameraConnectionFragment"
+      android:layout_width="match_parent"
+      android:layout_height="200dp"
+      android:layout_alignParentTop="true"
+      android:background="#000" />
 
+  <fragment
+      android:name="com.hongbog.view.GforceFragment"
+      android:id="@+id/gforce_container"
+      android:layout_width="match_parent"
+      android:layout_height="100dp"
+      android:layout_alignParentBottom="true"/>
+
+</RelativeLayout>

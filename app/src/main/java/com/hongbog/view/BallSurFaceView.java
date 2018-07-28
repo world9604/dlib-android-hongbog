@@ -1,23 +1,18 @@
 package com.hongbog.view;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
-import android.hardware.SensorManager;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.Display;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.WindowManager;
 
+import com.hongbog.viewmodel.Ball;
 import com.tzutalin.dlibtest.R;
 import com.tzutalin.dlibtest.SensorDTO;
 import com.tzutalin.dlibtest.SensorListener;
