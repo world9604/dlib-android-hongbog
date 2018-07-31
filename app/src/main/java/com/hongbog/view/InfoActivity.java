@@ -20,11 +20,6 @@ public class InfoActivity extends AppCompatActivity implements InfoViewContract 
         final ActivityInfoBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_info);
         final InfoViewModel infoViewModel = new InfoViewModel((InfoViewContract) this);
         binding.setViewModel(infoViewModel);
-
-        //binding.loadViewItem();
-
-        /*InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.showSoftInput(binding.editText, InputMethodManager.SHOW_IMPLICIT);*/
     }
 
     @Override
@@ -32,9 +27,9 @@ public class InfoActivity extends AppCompatActivity implements InfoViewContract 
 
     @Override
     public void startCameraActivity(String label) {
-        Intent intent = new Intent(this, CameraActivity.class);
+        Intent intent = getIntent();
+        intent.setClass(this, CameraActivity.class);
         intent.putExtra(CameraConnectionFragment.LABEL_NAME, label);
-
         finish();
         startActivity(intent);
     }

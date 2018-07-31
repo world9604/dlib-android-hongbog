@@ -46,6 +46,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
@@ -110,7 +111,6 @@ public class CameraConnectionFragment extends Fragment {
     private CaptureRequest.Builder previewRequestBuilder;
     private CaptureRequest previewRequest;
 
-
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
     private HandlerThread inferenceThread;
@@ -128,6 +128,13 @@ public class CameraConnectionFragment extends Fragment {
 
     //member label name
     private String mLabel;
+
+    private float mEyeStartLeft;
+    private float mEyeStartTop;
+    private TextView mStateTextView;
+
+    public static final int EYE_BOUNDARY_STEADY_STATE = 1;
+    public static final int EYE_BOUNDARY_UNSTABLE_STATE = 2;
 
     // 카메라의 상태가 변경되었을 때 상태콜백함수(StateCallback)가 호출된다.
     private final CameraDevice.StateCallback stateCallback =
@@ -192,6 +199,8 @@ public class CameraConnectionFragment extends Fragment {
             mLabel = label;
             intent.removeExtra(LABEL_NAME);
         }
+
+        mOnGetPreviewListener.setHandler(new StateTextChangeHandler());
     }
 
 
@@ -229,20 +238,27 @@ public class CameraConnectionFragment extends Fragment {
         super.onDestroy();
     }
 
+
     @Override
     public View onCreateView(
             final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState) {
-
         return inflater.inflate(R.layout.fragment_camera_connection, container, false);
     }
+
 
     @Override
     public void onViewCreated(final View view, final Bundle savedInstanceState) {
         // 카메라의 화면을 보여주는 TextureView
         textureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        /*RelativeLayout surfaceView = (RelativeLayout)view.findViewById(R.id.view);
-        surfaceView.addView(new CustomView(this));*/
+        RelativeLayout surfaceView = (RelativeLayout)view.findViewById(R.id.view);
+        CustomView eyeOverlayView = new CustomView(this);
+        surfaceView.addView(eyeOverlayView);
+        mStateTextView = getActivity().findViewById(R.id.state_textview);
+
+        mEyeStartLeft = eyeOverlayView.getStartLeft();
+        mEyeStartTop = eyeOverlayView.getStartTop();
     }
+
 
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
@@ -473,14 +489,14 @@ public class CameraConnectionFragment extends Fragment {
 
             super.onCaptureCompleted(session, request, result);
 
-            /*if (mOnGetPreviewListener.mNumCrop == 5){
+            if (mOnGetPreviewListener.mNumCrop == 5){
 
                 Log.i(TAG,"mOnGetPreviewListener: "+String.valueOf(mOnGetPreviewListener.mNumCrop));
 
                 CameraActivity activity = (CameraActivity) getActivity();
                 activity.goMain(mOnGetPreviewListener.bitmap_left, mOnGetPreviewListener.bitmap_right);
 
-            }*/
+            }
         }
     };
 
@@ -596,18 +612,22 @@ public class CameraConnectionFragment extends Fragment {
         }
     }
 
-/*
-    private void showToast(final String text) {
-        final Activity activity = getActivity();
-        if (activity != null) {
-            activity.runOnUiThread(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(activity, text, Toast.LENGTH_SHORT).show();
-                        }
-                    });
+
+    public class StateTextChangeHandler extends Handler{
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+
+            switch (msg.what){
+                case EYE_BOUNDARY_STEADY_STATE:
+                    mStateTextView.setText(R.string.steady_state_text);
+                    break;
+                case EYE_BOUNDARY_UNSTABLE_STATE:
+                    mStateTextView.setText(R.string.unstable_state_text);
+                    break;
+            }
         }
-    }*/
+    }
 
 }

@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.os.Handler;
+import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -22,13 +23,33 @@ import com.tzutalin.dlibtest.R;
 public class CustomView extends View {
 
     private Bitmap mBitmap;
-    private int mRatioWidth = 0;
-    private int mRatioHeight = 0;
-    private int mEyeWidth = 0;
-    private int mEyeHeight = 0;
-    private int mStartLeft = 0;
-    private int mStartTop = 0;
-    private int mEye2Eye = 0;
+    private float mRatioWidth = 0;
+    private float mRatioHeight = 0;
+    private float mEyeWidth = 0;
+    private float mEyeHeight = 0;
+    private float mStartLeft = 0;
+    private float mStartTop = 0;
+    private float mEye2Eye = 0;
+
+    public float getEyeWidth() {
+        return mEyeWidth;
+    }
+
+    public float getEyeHeight() {
+        return mEyeHeight;
+    }
+
+    public float getStartLeft() {
+        return mStartLeft;
+    }
+
+    public float getStartTop() {
+        return mStartTop;
+    }
+
+    public float getEye2Eye() {
+        return mEye2Eye;
+    }
 
     public CustomView(CameraConnectionFragment context) {
         super(context.getActivity().getBaseContext());
@@ -44,12 +65,20 @@ public class CustomView extends View {
 
         mRatioWidth = width;
         mRatioHeight = height;
-        mEyeWidth = mRatioWidth/8;
-        mEyeHeight = mRatioHeight/8;
-        mStartLeft = (mRatioWidth/8) * 2;
-        mStartTop = mRatioWidth/8;
-        mEye2Eye = (mRatioWidth/8) * 2;
-        mBitmap = Bitmap.createScaledBitmap(mBitmap, mEyeWidth, mEyeHeight,  true);
+
+        float hundredDp = TypedValue.applyDimension( TypedValue.COMPLEX_UNIT_DIP, 100,
+                getResources().getDisplayMetrics() );
+
+        mEyeWidth = mRatioWidth/9;
+        mEyeHeight = mRatioHeight/20;
+        mStartLeft = mEyeWidth * 3;
+        mStartTop = (mEyeHeight * 2) + hundredDp;
+        mEye2Eye = mEyeWidth;
+        mBitmap = Bitmap.createScaledBitmap(mBitmap, (int)mEyeWidth, (int)mEyeHeight,  true);
+
+        Dlog.d("mRatioHeight  : " + mRatioHeight );
+        Dlog.d("(int)mEyeHeight  : " + (int)mEyeHeight );
+        Dlog.d("(int)mEyeWidth  : " + (int)mEyeWidth );
     }
 
 
@@ -64,6 +93,7 @@ public class CustomView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        Dlog.d("onSizeChanged");
         setAspectRatio(w, h);
     }
 }

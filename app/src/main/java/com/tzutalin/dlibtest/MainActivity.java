@@ -4,8 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -13,26 +11,27 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.hongbog.view.InfoActivity;
 
-import java.util.ArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import hugo.weaving.DebugLog;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
     private static final String TAG = "MainActivity";
     private static final int REQUEST_CODE_PERMISSION = 2;
-    private Toolbar mToolbar;
+    public static final String ACTIVITY_FLOW_EXTRA = "ACTIVITY_FLOW_EXTRA";
+    public static final String VERIFY_EXTRA = "VERIFY_EXTRA";
+    public static final String ENROLL_EXTRA = "ENROLL_EXTRA";
+    public static final String DEVELOP_MODE_EXTRA = "DEVELOP_MODE_EXTRA";
     // Storage Permissions
     private static String[] PERMISSIONS_REQ = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -45,9 +44,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        setSupportActionBar(mToolbar);
 
-        // Just use hugo to print log
+        // 로딩과 동시에 신경망 초기화
+        TensorFlowClassifier.getInstance().initTensorFlowAndLoadModel(getAssets());
+
+        initView();
+
         isExternalStorageWritable();
         isExternalStorageReadable();
 
@@ -55,11 +57,20 @@ public class MainActivity extends AppCompatActivity {
         int currentapiVersion = android.os.Build.VERSION.SDK_INT;
         if (currentapiVersion >= Build.VERSION_CODES.M) {
             if(verifyPermissions(this)){
-                Intent intent = new Intent(this, CameraActivity.class);
+                /*Intent intent = new Intent(this, InfoActivity.class);
                 finish();
-                startActivity(intent);
+                startActivity(intent);*/
             }
         }
+    }
+
+
+    private void initView(){
+        Button verifyBtn = (Button)findViewById(R.id.verify_btn);
+        Button enrollBtn = (Button)findViewById(R.id.enroll_btn);
+
+        verifyBtn.setOnClickListener(this);
+        enrollBtn.setOnClickListener(this);
     }
 
 
@@ -101,10 +112,6 @@ public class MainActivity extends AppCompatActivity {
                     if (grantResults.length > 1
                             && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
 
-                        Intent intent = new Intent(this, CameraActivity.class);
-                        finish();
-                        startActivity(intent);
-
                     }else{
                         Toast.makeText(MainActivity.this, "승인 실패", Toast.LENGTH_LONG).show();
                     }
@@ -115,6 +122,54 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
         }
+    }
+
+
+    @Override
+    public void onClick(View v) {
+        int id = v.getId();
+
+        Intent intent = new Intent();
+
+        switch (id){
+            case R.id.verify_btn:
+                Dlog.d("verify_btn");
+                intent.setClass(this, CameraActivity.class);
+                intent.putExtra(ACTIVITY_FLOW_EXTRA, VERIFY_EXTRA);
+                break;
+            case R.id.enroll_btn:
+                Dlog.d("enroll_btn");
+                intent.setClass(this, InfoActivity.class);
+                intent.putExtra(ACTIVITY_FLOW_EXTRA, ENROLL_EXTRA);
+                break;
+        }
+
+        Dlog.d("onClick");
+        startActivity(intent);
+    }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_list, menu);
+        return true;
+    }
+
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int selectedId = item.getItemId();
+
+        switch (selectedId){
+            case R.id.developer_mode :
+                Intent intent = new Intent(this, InfoActivity.class);
+                intent.putExtra(ACTIVITY_FLOW_EXTRA, DEVELOP_MODE_EXTRA);
+                Dlog.d("onOptionsItemSelected");
+                finish();
+                startActivity(intent);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
 

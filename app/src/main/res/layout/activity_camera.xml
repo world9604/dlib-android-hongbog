@@ -43,26 +43,43 @@
         android:layout_height="100dp"
         app:layout_constraintBottom_toBottomOf="parent" />-->
 
-  <fragment
-      android:name="com.hongbog.view.StateFragment"
-      android:id="@+id/state_container"
-      android:layout_width="match_parent"
-      android:layout_height="100dp"
-      android:layout_alignParentTop="true"/>
+    <!--<fragment
+        android:name="com.tzutalin.dlibtest.CameraConnectionFragment"
+        android:id="@+id/detect_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"/>
 
-  <fragment
-      android:id="@+id/detect_container"
-      android:name="com.tzutalin.dlibtest.CameraConnectionFragment"
-      android:layout_width="match_parent"
-      android:layout_height="200dp"
-      android:layout_alignParentTop="true"
-      android:background="#000" />
+    <fragment
+        android:name="com.hongbog.view.StateFragment"
+        android:id="@+id/state_container"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_alignParentTop="true" />
 
-  <fragment
-      android:name="com.hongbog.view.GforceFragment"
-      android:id="@+id/gforce_container"
-      android:layout_width="match_parent"
-      android:layout_height="100dp"
-      android:layout_alignParentBottom="true"/>
+    <fragment
+        android:name="com.hongbog.view.GforceFragment"
+        android:id="@+id/gforce_container"
+        android:layout_width="match_parent"
+        android:layout_height="350dp"
+        android:layout_alignParentBottom="true"/>-->
+
+    <FrameLayout
+        android:id="@+id/detect_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"/>
+
+    <FrameLayout
+        android:id="@+id/state_container"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_alignParentTop="true" />
+
+    <FrameLayout
+        android:id="@+id/gforce_container"
+        android:layout_width="match_parent"
+        android:layout_height="350dp"
+        android:layout_alignParentBottom="true"/>
 
 </RelativeLayout>

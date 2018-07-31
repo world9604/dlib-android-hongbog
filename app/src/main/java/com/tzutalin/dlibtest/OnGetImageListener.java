@@ -69,8 +69,6 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private Context mContext;
     private FaceDet mFaceDet;
 
-    private TextView mTextView;
-
     int mNumCrop =0;
     Bitmap bitmap_left[] = new Bitmap[6];
     Bitmap bitmap_right[]= new Bitmap[6];
@@ -83,6 +81,12 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private HttpConnection httpConn = HttpConnection.getInstance();
     private SensorDTO mSensorDTO = new SensorDTO();
     private SensorChangeHandler mSensorChangeHandler;
+
+    private static Handler mEyeStateChangeHandler;
+
+    public static void setHandler(Handler handler) {
+        mEyeStateChangeHandler = handler;
+    }
 
     public OnGetImageListener() {
         mSensorChangeHandler = new SensorChangeHandler();
@@ -319,6 +323,12 @@ public class OnGetImageListener implements OnImageAvailableListener {
                                     Dlog.d("Exception Raise : " + e.getMessage());
                                 }
                                 */
+
+                                /*if(눈 오버레이 안에 실제 눈이 들어온 경우){
+                                    mEyeStateChangeHandler.obtainMessage(CameraConnectionFragment.EYE_BOUNDARY_STEADY_STATE).sendToTarget();
+                                }else{
+                                    mEyeStateChangeHandler.obtainMessage(CameraConnectionFragment.EYE_BOUNDARY_UNSTABLE_STATE).sendToTarget();
+                                }*/
                             }
                         }
                         /*

@@ -12,6 +12,8 @@ public class ResultProbList extends ArrayList<ResultProb> {
 
     public int result;
 
+    private long verificationtime;
+
     public ResultProbList(int initialCapacity) {
         super(initialCapacity);
     }
@@ -65,4 +67,8 @@ public class ResultProbList extends ArrayList<ResultProb> {
     public void setResult(int result) {
         this.result = result;
     }
+
+    public long getVerificationtime() { return verificationtime; }
+
+    public void setVerificationtime(long verificationtime) { this.verificationtime = verificationtime; }
 }

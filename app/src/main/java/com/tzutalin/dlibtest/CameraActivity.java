@@ -24,14 +24,18 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.hongbog.view.GforceFragment;
+import com.hongbog.view.ResultActivity;
 import com.hongbog.view.ResultTestActivity;
 import com.hongbog.view.StateFragment;
 
 import java.util.ArrayList;
+
+import static com.tzutalin.dlibtest.MainActivity.ACTIVITY_FLOW_EXTRA;
+import static com.tzutalin.dlibtest.MainActivity.DEVELOP_MODE_EXTRA;
+import static com.tzutalin.dlibtest.MainActivity.VERIFY_EXTRA;
 
 /**
  * Created by darrenl on 2016/5/20.
@@ -49,7 +53,6 @@ public class CameraActivity extends Activity {
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_camera);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -62,12 +65,12 @@ public class CameraActivity extends Activity {
         startTime = System.currentTimeMillis();
 
         if (null == savedInstanceState) {
-           /* getFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.detect_container, CameraConnectionFragment.newInstance())
-                    .replace(R.id.gforce_container, GforceFragment.newInstance())
-                    .replace(R.id.state_container, StateFragment.newInstance())
-                    .commit();*/
+           getFragmentManager()
+                .beginTransaction()
+                .replace(R.id.detect_container, CameraConnectionFragment.newInstance())
+                .replace(R.id.gforce_container, GforceFragment.newInstance())
+                .replace(R.id.state_container, StateFragment.newInstance())
+                .commit();
         }
    }
 
@@ -83,14 +86,27 @@ public class CameraActivity extends Activity {
         }
 
         // 리스트에 이미지 넣기
-        Intent intent = new Intent(getApplicationContext(), ResultTestActivity.class);
+        Intent intent = getIntent();
+        String mode = intent.getStringExtra(ACTIVITY_FLOW_EXTRA);
+
+        if (mode != null && DEVELOP_MODE_EXTRA.equals(mode)) {
+
+            intent.setClass(this, ResultTestActivity.class);
+
+        }else if(mode != null && VERIFY_EXTRA.equals(mode)){
+
+            intent.setClass(this, ResultActivity.class);
+
+        }else{
+            return;
+        }
+
         Bundle bundle = new Bundle();
 
         // 데이터 전달
         bundle.putParcelableArrayList("LeftEyeList", left_lst);       // ("변수명", 넘기는 값)
         bundle.putParcelableArrayList("RightEyeList", right_lst);       // ("변수명", 넘기는 값)
         intent.putExtras(bundle);
-        finish();
         startActivity(intent); // 명시적 인텐트(Activity 시작)
 
         long endTime = System.currentTimeMillis();
@@ -98,11 +114,13 @@ public class CameraActivity extends Activity {
         Log.i(TAG, "Time= "+String.valueOf(verificationtime));
     }
 
+
     @Override
     protected void onStart() {
         Dlog.d("onStart");
         super.onStart();
     }
+
 
     @Override
     protected void onPause() {
@@ -110,38 +128,29 @@ public class CameraActivity extends Activity {
         super.onPause();
     }
 
+
     @Override
     protected void onStop() {
         Dlog.d("onStop");
         super.onStop();
     }
 
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == OVERLAY_PERMISSION_REQ_CODE) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (!Settings.canDrawOverlays(this.getApplicationContext())) {
+                    Dlog.d("CameraActivity onActivityResult");
                     Toast.makeText(CameraActivity.this, "CameraActivity\", \"SYSTEM_ALERT_WINDOW, permission not granted...", Toast.LENGTH_SHORT).show();
                 } else {
                     Dlog.d("Settings.canDrawOverlays!!!");
+                    Toast.makeText(CameraActivity.this, "Restart CameraActivity", Toast.LENGTH_SHORT).show();
                     Intent intent = getIntent();
                     finish();
                     startActivity(intent);
-                    Toast.makeText(CameraActivity.this, "Restart CameraActivity", Toast.LENGTH_SHORT).show();
                 }
             }
         }
     }
-
-    /*
-    // Starts a background thread and its Handler
-    private void startBackgroundThread() {
-
-        inferenceThread = new HandlerThread("InferenceThread");
-        inferenceThread.start();
-        inferenceHandler = new Handler(inferenceThread.getLooper());
-
-    }
-    */
-
 }

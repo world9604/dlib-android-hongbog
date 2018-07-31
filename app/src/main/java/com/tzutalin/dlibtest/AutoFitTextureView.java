@@ -51,10 +51,12 @@ public class AutoFitTextureView extends TextureView {
     if (width < 0 || height < 0) {
       throw new IllegalArgumentException("Size cannot be negative.");
     }
+
     mRatioWidth = width;
     mRatioHeight = height;
+
     // onMeasure을 재호출 하여 layout size를 조절한다.
-    requestLayout();
+    //requestLayout();
   }
 
   @Override
@@ -62,6 +64,7 @@ public class AutoFitTextureView extends TextureView {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     final int width = MeasureSpec.getSize(widthMeasureSpec);
     final int height = MeasureSpec.getSize(heightMeasureSpec);
+
     if (0 == mRatioWidth || 0 == mRatioHeight) {
       setMeasuredDimension(width, height);
     } else {

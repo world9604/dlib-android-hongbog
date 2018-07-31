@@ -25,9 +25,6 @@ import org.w3c.dom.Text;
 
 public class StateFragment extends Fragment {
 
-    private TextView mTextView;
-
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
