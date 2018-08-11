@@ -1,6 +1,9 @@
 package com.tzutalin.dlibtest;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.util.Log;
 
@@ -10,43 +13,88 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
+import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
-import static org.opencv.core.Core.BORDER_DEFAULT;
-import static org.opencv.core.CvType.CV_16S;
-import static org.opencv.core.CvType.CV_32F;
+import java.util.ArrayList;
 
-/**
+import static java.lang.Math.abs;
+import static org.opencv.core.Core.BORDER_DEFAULT;
+import static org.opencv.core.Core.compare;
+import static org.opencv.core.Core.flip;
+import static org.opencv.core.CvType.CV_16S;
+import static org.opencv.core.CvType.CV_16SC1;
+import static org.opencv.core.CvType.CV_16SC3;
+import static org.opencv.core.CvType.CV_32F;
+import static org.opencv.core.CvType.CV_32FC3;
+import static org.opencv.core.CvType.CV_32SC3;
+import static org.opencv.core.CvType.CV_64F;
+import static org.opencv.core.CvType.CV_8S;
+import static org.opencv.core.CvType.CV_8U;
+import static org.opencv.core.CvType.CV_8UC1;
+import static org.opencv.core.CvType.CV_8UC4;
+
+/***
  * Created by jslee on 2018-07-19.
- */
+ * */
 
 public class CheckQuality {
 
     private static final String TAG = "CheckQuality";
-    private Bitmap mBitmap;
+
+    private static final int THRESHOLD_OF_BLURRY_IMAGE = 10;
+    private static final double THRESHOLD_OF_EAR = 0.25;
+    private static final int THRESHOLD_OF_SIDE_GLACE = 35;
+    private static final int THRESHOLE_OF_ROTATION = 25;
+
+
     private VisionDetRet mRet;
-    public double mBlur_Bitmap;
-    public double mBlur_R;
-    public double mBlur_L;
+    private Bitmap mBitmap;
+    private Bitmap mbitCrop_eye;
+    private Bitmap mbitCrop_L;
+    private Bitmap mbitCrop_R;
+
+
+    public int mBlur_all;
+    public int mBlur_eye;
+    public int mBlur_R;
+    public int mBlur_L;
+
     public double mEar;
     public double mRotat;
-    public boolean imageScope;
-    private boolean mAccept;
+
+    private boolean Scope = true;
+    private boolean blur = true;
+    private boolean ear = true;
+    private boolean glace = true;
+    private boolean rotate = true;
+
 
     // Used to load the 'native-lib' library on application startup.
     static {
         System.loadLibrary("opencv_java3");
     }
 
-    public CheckQuality(Bitmap bitmap, VisionDetRet ret) {
+    public CheckQuality(VisionDetRet ret, Bitmap bitmap,  Bitmap bitCrop_eye, Bitmap bitCrop_L, Bitmap bitCrop_R ) {
         super();
-        this.mBitmap = bitmap;
+
         this.mRet = ret;
+        this.mBitmap = bitmap;
+        this.mbitCrop_eye = bitCrop_eye;
+        this.mbitCrop_L = bitCrop_L;
+        this.mbitCrop_R = bitCrop_R;
+
+
+
     }
 
 
-    public boolean isImageScope(){
+    public String acceptScope() {
 
+        String string = "";
+
+        this.Scope = false;
+                // 얼굴 크기와 눈 크기가 일정 범위 내에 있는지 체크
         Rect bounds = new Rect();
 
         bounds.left = mRet.getLeft();
@@ -54,104 +102,173 @@ public class CheckQuality {
         bounds.right = mRet.getRight();
         bounds.bottom = mRet.getBottom();
         int faceWidth = (bounds.right - bounds.left);
-        Log.i(TAG,"Face width:" + String.valueOf(faceWidth));
+        //Log.i(TAG,"Face width:" + String.valueOf(faceWidth));
 
         int width_L = mRet.mStartLeftX + mRet.mWidthLeft;
-        int width_R = mRet.mStartRightX +mRet.mWidthRight;
+        int width_R = mRet.mStartRightX + mRet.mWidthRight;
         int height_L = mRet.mStartLeftY + mRet.mHightLeft;
-        int height_R = mRet.mStartRightY +mRet.mHightRight;
-        Log.i(TAG,"Left size("+String.valueOf(width_L)+", "+String.valueOf(height_L)+")");
-        Log.i(TAG,"Right size("+String.valueOf(width_R)+", "+String.valueOf(height_R)+")");
+        int height_R = mRet.mStartRightY + mRet.mHightRight;
+        width_L = mRet.getWidthLeft();
+        width_R = mRet.getWidthRight();
+        height_L = mRet.getHightLeft();
+        height_R = mRet.getHightRight();
+
+
 
         // 얼굴 크기가 너무 작거나 큰것 제외시킨다.
-        if(faceWidth>200 && faceWidth<450) {
+        //if ((faceWidth > 200) && (faceWidth < 450)) {
+
             // 눈의 좌표가 이미지 사이즈 넘어가지 않도록 한다.
-            if(0<width_L && width_L<mBitmap.getWidth()){
-                if(0<width_R && width_R<mBitmap.getWidth()) {
-                    if (0 < height_L && height_L < mBitmap.getHeight()) {
-                        if (0 < height_R && height_R < mBitmap.getHeight()) {
+            if ((0 < width_L) && (width_L < mBitmap.getWidth())) {
+                if ((0 < width_R) && (width_R < mBitmap.getWidth())) {
+
+                    if ((0 < height_L) && (height_L < mBitmap.getHeight())) {
+                        if ((0 < height_R) && (height_R < mBitmap.getHeight())) {
+
                             // 눈 크기가 너무 작은것 제외시킨다.
-                            if(150<width_L &&150<width_R){
-                                imageScope = true;
+                            if ((150 < width_L) && (150 < width_R)) {
+                                this.Scope = true;
+                            }
+                            else{
+                                string = " 더 가까히 오세요 ~~!";
+                                Log.i(TAG, "Left size(" + String.valueOf(width_L) + ", " + String.valueOf(height_L) + ")" + " / Right size(" + String.valueOf(width_R) + ", " + String.valueOf(height_R) + ")");
                             }
                         }
+                        else{
+                            string = " 좀더 멀리 가세요 ~~!";
+                            Log.i(TAG, "Left size(" + String.valueOf(width_L) + ", " + String.valueOf(height_L) + ")" + " / Right size(" + String.valueOf(width_R) + ", " + String.valueOf(height_R) + ")");
+                        }
+
 
                     }
                 }
             }
+        //}
+        return string;
+
+    }
+
+    public String  acceptBlur() {
+
+        this.blur = false;
+        String string = "";
+
+        // 이미지가 스무딩 되었는지 체크
+        VoL blur = new VoL();
+
+        //this.mBlur_all = blur.calculateBlur(this.mBitmap);
+        //Log.i(TAG, "Blur all:" + String.valueOf(this.mBlur_all));
+
+        this.mBlur_eye = blur.calculateBlur(this.mbitCrop_eye);
+        // Log.i(TAG, "Blur all:" + String.valueOf(this.mBlur_eye));
+
+        this.mBlur_L = blur.calculateBlur(this.mbitCrop_L);
+        this.mBlur_R = blur.calculateBlur(this.mbitCrop_R);
+
+
+        if (mBlur_L > THRESHOLD_OF_BLURRY_IMAGE && mBlur_R > THRESHOLD_OF_BLURRY_IMAGE) {
+            this.blur = true;
+        }
+        else{
+            string = " 얼굴을 움직이지 마세요~~ ";
+            Log.i(TAG, "Blur Left:" + String.valueOf(this.mBlur_L) + " / Blur Right:" + String.valueOf(this.mBlur_R));
         }
 
-        return imageScope;
+        return string;
 
     }
 
-    public boolean isBlur(Bitmap bitCrop_L, Bitmap bitCrop_R){
 
-        Mat matGray = new Mat();
-        MatOfDouble mean = new MatOfDouble();
-        MatOfDouble std = new MatOfDouble();
 
-        /***------------------------------------------------------
-         *  제외할 조건들: blur, ear, rotation
-         *  ---------------------------------------------------***/
-        // Bitmap -> Mat(matOri, matLeft, matRight)
-        // 전체 Mat: matOri
-        Mat matOri = new Mat (mBitmap.getWidth(), mBitmap.getHeight(), CV_32F);  //CV_8UC1
-        Utils.bitmapToMat(mBitmap, matOri);
-        // 왼쪽눈 Mat: matLeft
-        Mat matLeft = new Mat (bitCrop_L.getWidth(), bitCrop_L.getHeight(), CV_32F);  //CV_8UC1
-        Utils.bitmapToMat(bitCrop_L, matLeft);
-        // 오른쪽눈 Mat: matRight
-        Mat matRight = new Mat (bitCrop_R.getWidth(), bitCrop_R.getHeight(), CV_32F);
-        Utils.bitmapToMat(bitCrop_R, matRight);
+    public String acceptEar(){
 
-        // blur : cv2.Laplacian(image, cv2.CV_64F).var()--------------------
-        // 전체
-        Imgproc.cvtColor(matOri, matGray, Imgproc.COLOR_BGR2GRAY);
-        //Imgproc.Laplacian(matLeftGray, matLeftGray, CV_16S); //-> Gray CV_16S
-        Imgproc.Laplacian(matGray, matGray, CV_16S, 3, 1, 0, BORDER_DEFAULT );
-        Core.meanStdDev(matGray, mean, std);
-        this.mBlur_Bitmap = std.get(0,0)[0];
-        Log.i(TAG, "Blur all:" + String.valueOf(this.mBlur_Bitmap));
+        this.ear = false;
+        String string = "";
 
-        // 왼쪽눈
-        Imgproc.cvtColor(matLeft, matGray, Imgproc.COLOR_BGR2GRAY);
-        //Imgproc.Laplacian(matLeftGray, matLeftGray, CV_16S); //-> Gray CV_16S
-        Imgproc.Laplacian(matGray, matGray, CV_16S, 3, 1, 0, BORDER_DEFAULT );
-        Core.meanStdDev(matGray, mean, std);
-        //Imgproc.Laplacian(matLeft,matLeft,CV_64F);//-> Color
-        //Core.meanStdDev(matLeft, mean, std);
-        //this.mBlur_L = Math.pow(std.get(0,0)[0], 2);  //double stdDev = std.get(0,0)[0];
-        this.mBlur_L = std.get(0,0)[0];  //double stdDev = std.get(0,0)[0];
-        Log.i(TAG,"Blur Left:"+String.valueOf( this.mBlur_L));
+        // 눈이 감겼는제 체크
+        EAR myEar = new EAR(this.mRet);
 
-        // 오른쪽눈
-        Imgproc.cvtColor(matLeft, matGray, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.Laplacian(matGray, matGray, CV_16S); //-> Gray
-        Core.meanStdDev(matGray, mean, std);
-        //Imgproc.Laplacian(matLeft,matLeft,CV_64F);//-> Color
-        //Core.meanStdDev(matLeft, mean, std);
-        this.mBlur_R = std.get(0,0)[0]; // Math.pow(std.get(0,0)[0], 2);  //double stdDev = std.get(0,0)[0];
-        Log.i(TAG,"Blur Right:"+String.valueOf( this.mBlur_R));
+        myEar.calculateEarLeft();
+        myEar.calculateEarRight();
 
-        boolean blur = false;
-        if(mBlur_L>0 && mBlur_R > 0){
-            blur = true;
+
+
+        if((myEar.getLeft_ear() > THRESHOLD_OF_EAR) && (myEar.getRight_ear() > THRESHOLD_OF_EAR)){
+            this.ear = true;
         }
+        else{
+            string = " 눈을 크게 뜨세요~~~!! ";
+            Log.i(TAG,String.format("EAR: left(%f) /  right(%f)", myEar.getLeft_ear(), myEar.getRight_ear()));
+        }
+        return string;
 
-        return blur;
     }
 
-    public void setImageScope(boolean imageScope) {
-        this.imageScope = imageScope;
+    public String acceptGlace(){
+
+        this.glace = false;
+        String string = "";
+
+        // 옆으로 흘겨보는지 체크
+        Glace glace = new Glace(this.mRet, this.mBitmap);
+
+        int diff = glace.calculateSideGlace();
+
+
+        if(diff < THRESHOLD_OF_SIDE_GLACE){
+            this.glace = true;
+        }
+        else{
+
+            string = "고개를 돌리지 마시고 정면을 보세요~~!!";
+            Log.i(TAG, String.format("Difference of side of face : %d)", diff));
+        }
+        return string;
+
     }
+
+    public String acceptRotate(){
+
+        this.rotate = false;
+        String string = "";
+
+        // 고개를 기울였는지 체크
+        ArrayList<Point> landmark = mRet.getFaceLandmarks();
+
+        int rotat = abs(landmark.get(36).y - landmark.get(45).y);
+
+
+
+
+        if (rotat < THRESHOLE_OF_ROTATION){
+            this.rotate = true;
+        }
+        else{
+            string = "고개를 옆으로 기울이지 마세요~~!! ";
+            Log.i(TAG, String.format("Rotation of face : %d)", rotat));
+        }
+        return string;
+
+
+    }
+
+
 
     public boolean isAccept() {
+        boolean mAccept = false;
+
+        if ((this.Scope == true) && (this.blur == true) && (this.ear == true) && (this.glace == true) && (this.rotate == true)) {
+            mAccept = true;
+        }
+
+
         return mAccept;
+
     }
 
-    public void setAccept(boolean accept) {
-        this.mAccept = accept;
-    }
+
 
 }
+
+
+

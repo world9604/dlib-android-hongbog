@@ -23,13 +23,19 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Trace;
+import android.text.Layout;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.Display;
+import android.view.Surface;
+import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.hongbog.view.CustomView;
 import com.tzutalin.dlib.Constants;
 import com.tzutalin.dlib.FaceDet;
 import com.tzutalin.dlib.VisionDetRet;
@@ -39,6 +45,7 @@ import junit.framework.Assert;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.security.interfaces.DSAKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +58,7 @@ import okhttp3.Response;
 // preview "1) 프레임을 가져 와서",   이미지를 "2)비트 맵으로 변환"하여   dlib lib로 처리하는 클래스
 public class OnGetImageListener implements OnImageAvailableListener {
 
-    private static final int INPUT_SIZE = 500;//500; //224;
+    private static final int INPUT_SIZE = 720; //500;//500; //224;
     private static final String TAG = "i99";
 
     private int mScreenRotation = 90;
@@ -61,32 +68,38 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private int[] mRGBBytes = null;
     private Bitmap mRGBframeBitmap = null;
     private Bitmap mBitmap = null;
-    private Bitmap mCroppedBitmap = null;
 
     private boolean mIsComputing = false;
     private Handler mInferenceHandler;
+    private Handler mBackgroundHandler;
+
+    private float mOverlayStartLeftX = 0;
+    private float mOverlayStartLeftY = 0;
+    private float mOverlayStartRightX = 0;
+    private float mOverlayStartRightY = 0;
+    private float mOverlayEye2Eye = 0;
+    private float mOverlayEyeHeight = 0;
+    private float mOverlayEyeWidth = 0;
+    private float mOverlayEndLeftX = 0;
+    private float mOverlayEndLeftY = 0;
+    private float mOverlayEndRightX = 0;
+    private float mOverlayEndRightY = 0;
 
     private Context mContext;
     private FaceDet mFaceDet;
 
-    int mNumCrop =0;
+    int mNumCrop = 0;
     Bitmap bitmap_left[] = new Bitmap[6];
     Bitmap bitmap_right[]= new Bitmap[6];
 
-    //private TrasparentTitleView mTransparentTitleView;  // timecost를 보여주기위해
-//    private FloatingCameraWindow mWindow;               // Landmark point를 보여주는 preview
-
     private Paint mFaceLandmardkPaint;
-
     private HttpConnection httpConn = HttpConnection.getInstance();
     private SensorDTO mSensorDTO = new SensorDTO();
     private SensorChangeHandler mSensorChangeHandler;
+    private CustomView mEyeOverlayView;
+    private int mTextureViewWidth;
+    private int mTextureViewHeight;
 
-    private static Handler mEyeStateChangeHandler;
-
-    public static void setHandler(Handler handler) {
-        mEyeStateChangeHandler = handler;
-    }
 
     public OnGetImageListener() {
         mSensorChangeHandler = new SensorChangeHandler();
@@ -94,11 +107,16 @@ public class OnGetImageListener implements OnImageAvailableListener {
     }
 
 
-    public void initialize(final Context context, final AssetManager assetManager, final Handler handler, final String label) {
+    public void initialize(final Context context, final AssetManager assetManager,
+                           final Handler inferenceHandler , final Handler backgroundHandler,
+                           final String label, final CustomView eyeOverlayView, final AutoFitTextureView textureView) {
+        Dlog.d("initialize");
+
         this.mContext = context;
-        this.mInferenceHandler = handler;
+        this.mInferenceHandler = inferenceHandler;
+        this.mBackgroundHandler = backgroundHandler;
+//        mFaceDet = FaceDet.getInstance();
         mFaceDet = new FaceDet(Constants.getFaceShapeModelPath());
-//        mWindow = new FloatingCameraWindow(mContext);
 
         mFaceLandmardkPaint = new Paint();
         mFaceLandmardkPaint.setColor(Color.GREEN);
@@ -106,15 +124,23 @@ public class OnGetImageListener implements OnImageAvailableListener {
         mFaceLandmardkPaint.setStyle(Paint.Style.STROKE);
 
         mSensorDTO.setLabel(label);
+
+        mTextureViewWidth = textureView.getRatioWidth();
+        mTextureViewHeight = textureView.getRatioHeight();
+
+        mEyeOverlayView = eyeOverlayView;
+
+        // loading animation stop
+        //mBackgroundHandler.obtainMessage(CameraConnectionFragment.LOAD_VIEW_COMPLETE).sendToTarget();
     }
 
 
     public void deInitialize() {
+        Dlog.d("deInitialize");
         synchronized (OnGetImageListener.this) {
             if (mFaceDet != null) {
                 mFaceDet.release();
             }
-            /*if (mWindow != null) { mWindow.release(); }*/
         }
     }
 
@@ -158,9 +184,13 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
     @Override
     public void onImageAvailable(final ImageReader reader) {
+
         Image image = null;
+        int textureviewAndPreviewWidthRatio = 0;
+        int textureviewAndPreviewHeightRatio = 0;
+
         try {
-            image = reader.acquireLatestImage();    // ImageReader 에서image 를 얻어온다
+            image = reader.acquireLatestImage();
 
             if (image == null) {
                 return;
@@ -178,6 +208,9 @@ public class OnGetImageListener implements OnImageAvailableListener {
             if (mPreviewWdith != image.getWidth() || mPreviewHeight != image.getHeight()) {
                 mPreviewWdith = image.getWidth();
                 mPreviewHeight = image.getHeight();
+
+                textureviewAndPreviewWidthRatio = mPreviewWdith / mTextureViewWidth;
+                textureviewAndPreviewHeightRatio = mPreviewHeight / mTextureViewHeight;
 
                 Log.i(TAG, String.format("Preview size (%d,%d)", mPreviewWdith, mPreviewHeight));
                 mRGBBytes = new int[mPreviewWdith * mPreviewHeight];
@@ -218,6 +251,43 @@ public class OnGetImageListener implements OnImageAvailableListener {
         mRGBframeBitmap.setPixels(mRGBBytes, 0, mPreviewWdith, 0, 0, mPreviewWdith, mPreviewHeight);
         drawResizedBitmap(mRGBframeBitmap, mBitmap);
 
+        //mEyeOverlayView.covertPreviewRatio(textureviewAndPreviewWidthRatio, textureviewAndPreviewHeightRatio);
+
+/*        Bitmap b = Bitmap.createBitmap( INPUT_SIZE, INPUT_SIZE, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        //mEyeOverlayView.layout(0, 0, mPreviewWdith, mPreviewHeight);
+        mEyeOverlayView.draw(c);*/
+
+
+//        if (v.getMeasuredHeight() <= 0) {
+//            mEyeOverlayView.measure(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+//            Bitmap b = Bitmap.createBitmap(mEyeOverlayView.getMeasuredWidth(), mEyeOverlayView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+//            Canvas c = new Canvas(b);
+//            mEyeOverlayView.layout(0, 0, mEyeOverlayView.getMeasuredWidth(), mEyeOverlayView.getMeasuredHeight());
+//            mEyeOverlayView.draw(c);
+//        }
+
+        /*ImageUtils.saveBitmap(b, "abc");
+        ImageUtils.saveBitmap(mBitmap, "mBitmap");*/
+
+
+        mOverlayStartLeftX = mEyeOverlayView.getStartLeftX();
+        mOverlayStartLeftY = mEyeOverlayView.getStartLeftY();
+
+        mOverlayStartRightX = mEyeOverlayView.getStartRightX();
+        mOverlayStartRightY = mEyeOverlayView.getStartRightY();
+
+        mOverlayEndLeftX = mEyeOverlayView.getEndLeftX();
+        mOverlayEndLeftY = mEyeOverlayView.getEndLeftY();
+
+        mOverlayEndRightX = mEyeOverlayView.getEndRightX();
+        mOverlayEndRightY = mEyeOverlayView.getEndRightY();
+
+        mOverlayEye2Eye = mEyeOverlayView.getEye2Eye();
+        mOverlayEyeHeight = mEyeOverlayView.getEyeHeight();
+        mOverlayEyeWidth = mEyeOverlayView.getEyeWidth();
+
+
         mInferenceHandler.post(
                 new Runnable() {
                     @Override
@@ -226,11 +296,57 @@ public class OnGetImageListener implements OnImageAvailableListener {
                         synchronized (OnGetImageListener.this) {
                             results = mFaceDet.detect(mBitmap);
                         }
+
                         if (results != null) {
                             for (final VisionDetRet ret : results) {
-                                /*
+
+                                Dlog.d("");
+                                Dlog.d("mOverlayStartRightX : "+mOverlayStartRightX);
+                                Dlog.d("mOverlayStartRightY : "+mOverlayStartRightY );
+                                Dlog.d("mOverlayEndRightX : "+mOverlayEndRightX);
+                                Dlog.d("mOverlayEndRightY : "+mOverlayEndRightY);
+                                Dlog.d("mOverlayStartLeftX : "+mOverlayStartLeftX);
+                                Dlog.d("mOverlayStartLeftY : "+mOverlayStartLeftY );
+                                Dlog.d("mOverlayEndLeftX : "+mOverlayEndLeftX);
+                                Dlog.d("mOverlayEndLeftY : "+mOverlayEndLeftY);
+                                Dlog.d("");
+                                Dlog.d("ret.start_right_x() : "+ret.start_right_x);
+                                Dlog.d("ret.start_right_y() : "+ret.start_right_y);
+                                Dlog.d("ret.end_right_x() : "+ret.end_right_x);
+                                Dlog.d("ret.end_right_y() : "+ret.end_right_y);
+                                Dlog.d("ret.start_left_x() : "+ret.start_left_x);
+                                Dlog.d("ret.start_left_y() : "+ret.start_left_y);
+                                Dlog.d("ret.end_left_x() : "+ret.end_left_x);
+                                Dlog.d("ret.end_left_y() : "+ret.end_left_y);
+                                Dlog.d("");
+                                Dlog.d("mOverlayStartRightX <= ret.start_right_x() : " + String.valueOf(mOverlayStartRightX <= ret.start_right_x));
+                                Dlog.d("mOverlayEndRightX >= ret.end_right_x() : " + String.valueOf(mOverlayEndRightX >= ret.end_right_x));
+                                Dlog.d("mOverlayStartRightY <= ret.start_right_y() : " + String.valueOf(mOverlayStartRightY <= ret.start_right_y));
+                                Dlog.d("mOverlayEndRightY >= ret.end_right_y() : " + String.valueOf(mOverlayEndRightY >= ret.end_right_y));
+                                Dlog.d("mOverlayStartLeftX <= ret.start_left_x() : " + String.valueOf(mOverlayStartLeftX <= ret.start_left_x));
+                                Dlog.d("mOverlayEndLeftX >= ret.end_left_x() : " + String.valueOf(mOverlayEndLeftX >= ret.end_left_x));
+                                Dlog.d("mOverlayStartLeftY <= ret.start_left_y() : " + String.valueOf(mOverlayStartLeftY <= ret.start_left_y));
+                                Dlog.d("mOverlayEndLeftY >= ret.end_left_y() : " + String.valueOf(mOverlayEndLeftY >= ret.end_left_y));
+
+                                if(mOverlayStartRightX <= ret.start_right_x
+                                        && mOverlayEndRightX >= ret.end_right_x
+                                        && mOverlayStartRightY <= ret.start_right_y
+                                        && mOverlayEndRightY >= ret.end_right_y
+                                        && mOverlayStartLeftX <= ret.start_left_x
+                                        && mOverlayEndLeftX >= ret.end_left_x
+                                        && mOverlayStartLeftY <= ret.start_left_y
+                                        && mOverlayEndLeftY >= ret.end_left_y){
+
+                                    mBackgroundHandler.obtainMessage(CameraConnectionFragment.EYE_BOUNDARY_STEADY_STATE).sendToTarget();
+
+                                }else{
+
+                                    mBackgroundHandler.obtainMessage(CameraConnectionFragment.EYE_BOUNDARY_UNSTABLE_STATE).sendToTarget();
+
+                                }
+
                                 //detecting 이미지를 보여준다
-                                Canvas canvas = new Canvas(mBitmap);
+                                /*Canvas canvas = new Canvas(mBitmap);
                                 ArrayList<Point> landmarks = ret.getFaceLandmarks();
                                 for (int j=0; j<landmarks.size(); j++) {
                                     Point point = landmarks.get(j);
@@ -239,12 +355,11 @@ public class OnGetImageListener implements OnImageAvailableListener {
                                     }if(j>41  && j<48){      //오른쪽(42 ~ 47)
                                         canvas.drawCircle(point.x , point.y, 3, mFaceLandmardkPaint);
                                     }
-                                }
-                                */
+                                }*/
 
-                                CheckQuality quality = new CheckQuality(mBitmap, ret);
+                               /* CheckQuality quality = new CheckQuality(mBitmap, ret);
                                 quality.setImageScope(false);
-                                quality.setAccept(false);
+                                quality.setAccept(false);*/
 
                                 /* -----------------------
                                 * *      눈 영역만 crop
@@ -256,8 +371,8 @@ public class OnGetImageListener implements OnImageAvailableListener {
                                 //Log.i(TAG, String.format("%d: right size (%d,%d)", INPUT_SIZE, bitCrop_L.getWidth(), bitCrop_L.getHeight()));
 
                                 // 몇가지 조건 만족여부 조사
-                                quality.isImageScope();
-                                quality.isBlur(bitCrop_L, bitCrop_R);
+                                //quality.isImageScope();
+                                //quality.isBlur(bitCrop_L, bitCrop_R);
 
                                 //if (quality.isAccept() == true && quality.isImageScope()==true) {
 
@@ -266,15 +381,16 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
                                 //if(sizeLeft<40000 && sizeRight<40000){
 
-                                //crop 한 눈 영상 파일로 저장
-                                String left = "left_" + String.valueOf(quality.mBlur_L);
+                                //crop 한 눈 영상 파일로 저장 (임시 주석 taein)
+                                /*String left = "left_" + String.valueOf(quality.mBlur_L);
                                 String right = "right_" + String.valueOf(quality.mBlur_R);
-                                //String right = "right_"+String.valueOf(mNumCrop);
-                                //String left = "left_"+String.valueOf(mNumCrop) ;
+                                */
+                                String right = "right_"+String.valueOf(mNumCrop);
+                                String left = "left_"+String.valueOf(mNumCrop) ;
 
                                 //임시 주석 taein
-                                /*ImageUtils.saveBitmap(bitCrop_R, right);
-                                ImageUtils.saveBitmap(bitCrop_L, left);*/
+                                //ImageUtils.saveBitmap(bitCrop_R, right);
+//                                ImageUtils.saveBitmap(bitCrop_L, left);
 
                                 try{
                                     bitmap_right[mNumCrop] = bitCrop_R;
@@ -283,7 +399,12 @@ public class OnGetImageListener implements OnImageAvailableListener {
                                     ex.printStackTrace();
                                 }
 
-                                mNumCrop = mNumCrop + 1 ;
+                                mNumCrop = mNumCrop + 1;
+
+                                /*if(mNumCrop == 5){
+                                    //mBackgroundHandler.obtainMessage(CameraConnectionFragment.FULL_CAPTURE_COMPLETE).sendToTarget();
+                                    mNumCrop = 0;
+                                }*/
 
                                 //}
                                 //else{
@@ -324,11 +445,6 @@ public class OnGetImageListener implements OnImageAvailableListener {
                                 }
                                 */
 
-                                /*if(눈 오버레이 안에 실제 눈이 들어온 경우){
-                                    mEyeStateChangeHandler.obtainMessage(CameraConnectionFragment.EYE_BOUNDARY_STEADY_STATE).sendToTarget();
-                                }else{
-                                    mEyeStateChangeHandler.obtainMessage(CameraConnectionFragment.EYE_BOUNDARY_UNSTABLE_STATE).sendToTarget();
-                                }*/
                             }
                         }
                         /*

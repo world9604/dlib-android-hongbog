@@ -30,7 +30,7 @@ public class InfoActivity extends AppCompatActivity implements InfoViewContract 
         Intent intent = getIntent();
         intent.setClass(this, CameraActivity.class);
         intent.putExtra(CameraConnectionFragment.LABEL_NAME, label);
-        finish();
         startActivity(intent);
+        finish();
     }
 }

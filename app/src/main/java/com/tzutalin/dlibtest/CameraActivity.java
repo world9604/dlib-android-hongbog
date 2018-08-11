@@ -22,14 +22,21 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.provider.Settings;
+import android.text.Layout;
 import android.util.Log;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.hongbog.view.GforceFragment;
 import com.hongbog.view.ResultActivity;
 import com.hongbog.view.ResultTestActivity;
-import com.hongbog.view.StateFragment;
+import com.victor.loading.rotate.RotateLoading;
 
 import java.util.ArrayList;
 
@@ -42,16 +49,21 @@ import static com.tzutalin.dlibtest.MainActivity.VERIFY_EXTRA;
  */
 public class CameraActivity extends Activity {
 
-    //private static final String TAG = "CameraActivity";
     private static final String TAG = "i99";
 
     private static int OVERLAY_PERMISSION_REQ_CODE = 1;
 
     private long startTime;
 
+    private RelativeLayout loadingLayout;
+
+    private RotateLoading rotateLoading;
+
+    private FrameLayout gforceFrameLayout;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
+        Dlog.d("onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
@@ -65,14 +77,14 @@ public class CameraActivity extends Activity {
         startTime = System.currentTimeMillis();
 
         if (null == savedInstanceState) {
-           getFragmentManager()
+            getFragmentManager()
                 .beginTransaction()
                 .replace(R.id.detect_container, CameraConnectionFragment.newInstance())
-                .replace(R.id.gforce_container, GforceFragment.newInstance())
-                .replace(R.id.state_container, StateFragment.newInstance())
+//                .replace(R.id.gforce_container, GforceFragment.newInstance())
+//                .replace(R.id.state_container, StateFragment.newInstance())
                 .commit();
         }
-   }
+    }
 
 
     public void goMain(Bitmap bitmap_left[], Bitmap bitmap_right[]) {
@@ -90,13 +102,9 @@ public class CameraActivity extends Activity {
         String mode = intent.getStringExtra(ACTIVITY_FLOW_EXTRA);
 
         if (mode != null && DEVELOP_MODE_EXTRA.equals(mode)) {
-
             intent.setClass(this, ResultTestActivity.class);
-
         }else if(mode != null && VERIFY_EXTRA.equals(mode)){
-
             intent.setClass(this, ResultActivity.class);
-
         }else{
             return;
         }
@@ -104,10 +112,11 @@ public class CameraActivity extends Activity {
         Bundle bundle = new Bundle();
 
         // 데이터 전달
-        bundle.putParcelableArrayList("LeftEyeList", left_lst);       // ("변수명", 넘기는 값)
-        bundle.putParcelableArrayList("RightEyeList", right_lst);       // ("변수명", 넘기는 값)
+        bundle.putParcelableArrayList("LeftEyeList", left_lst);
+        bundle.putParcelableArrayList("RightEyeList", right_lst);
         intent.putExtras(bundle);
-        startActivity(intent); // 명시적 인텐트(Activity 시작)
+        startActivity(intent);
+        finish();
 
         long endTime = System.currentTimeMillis();
         long verificationtime = (endTime-startTime)/100;
@@ -137,6 +146,20 @@ public class CameraActivity extends Activity {
 
 
     @Override
+    protected void onResume() {
+        Dlog.d("onResume");
+        super.onResume();
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        Dlog.d("onDestroy");
+        super.onDestroy();
+    }
+
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == OVERLAY_PERMISSION_REQ_CODE) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -147,10 +170,25 @@ public class CameraActivity extends Activity {
                     Dlog.d("Settings.canDrawOverlays!!!");
                     Toast.makeText(CameraActivity.this, "Restart CameraActivity", Toast.LENGTH_SHORT).show();
                     Intent intent = getIntent();
-                    finish();
                     startActivity(intent);
+                    finish();
                 }
             }
         }
+    }
+
+
+    public void stopLoadingAnimation() {
+
+        Dlog.d("stopLoadingAnimation");
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                rotateLoading.stop();
+                loadingLayout.setVisibility(View.GONE);
+                gforceFrameLayout.setVisibility(View.VISIBLE);
+            }
+        });
     }
 }

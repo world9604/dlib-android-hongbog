@@ -4,9 +4,11 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -14,10 +16,16 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.hongbog.view.InfoActivity;
+import com.hongbog.view.LoadingActivity;
+import com.tzutalin.dlib.Constants;
+import com.tzutalin.dlib.FaceDet;
+import com.victor.loading.rotate.RotateLoading;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -32,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public static final String VERIFY_EXTRA = "VERIFY_EXTRA";
     public static final String ENROLL_EXTRA = "ENROLL_EXTRA";
     public static final String DEVELOP_MODE_EXTRA = "DEVELOP_MODE_EXTRA";
+
     // Storage Permissions
     private static String[] PERMISSIONS_REQ = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -43,25 +52,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
 
-        // 로딩과 동시에 신경망 초기화
-        TensorFlowClassifier.getInstance().initTensorFlowAndLoadModel(getAssets());
+        startLoadingActivity();
 
         initView();
-
-        isExternalStorageWritable();
-        isExternalStorageReadable();
 
         // For API 23+ you need to request the read/write permissions even if they are already in your manifest.
         int currentapiVersion = android.os.Build.VERSION.SDK_INT;
         if (currentapiVersion >= Build.VERSION_CODES.M) {
-            if(verifyPermissions(this)){
-                /*Intent intent = new Intent(this, InfoActivity.class);
-                finish();
-                startActivity(intent);*/
-            }
+            if(verifyPermissions(this)){}
         }
+    }
+
+
+    private void startLoadingActivity() {
+        startActivity(new Intent(this, LoadingActivity.class));
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
 
@@ -159,39 +172,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int selectedId = item.getItemId();
+        Dlog.d("onOptionsItemSelected");
 
         switch (selectedId){
             case R.id.developer_mode :
-                Intent intent = new Intent(this, InfoActivity.class);
+                Intent intent = new Intent(this, CameraActivity.class);
                 intent.putExtra(ACTIVITY_FLOW_EXTRA, DEVELOP_MODE_EXTRA);
-                Dlog.d("onOptionsItemSelected");
-                finish();
                 startActivity(intent);
                 break;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-
-    /* Checks if external storage is available for read and write */
-    @DebugLog
-    private boolean isExternalStorageWritable() {
-        String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            return true;
-        }
-        return false;
-    }
-
-
-    /* Checks if external storage is available to at least read */
-    @DebugLog
-    private boolean isExternalStorageReadable() {
-        String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state) ||
-                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-            return true;
-        }
-        return false;
     }
 }

@@ -19,8 +19,12 @@ package com.tzutalin.dlibtest;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -46,9 +50,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.support.annotation.UiThread;
 import android.support.v4.app.ActivityCompat;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
@@ -60,12 +67,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.view.ViewTreeObserver;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.hongbog.view.CustomView;
+import com.victor.loading.rotate.RotateLoading;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,7 +93,8 @@ public class CameraConnectionFragment extends Fragment {
     private static final String TAG = "i99";
 
     //카메라 미리보기 크기가 DESIRED_SIZE x DESIRED_SIZE 사각형을 포함 할 수있는 픽셀 크기로 가장 작은 프레임으로 선택됨
-    private static final int MINIMUM_PREVIEW_SIZE = 500;       // 1000일때, S6와 Note5는 1088x1088 // 500일때 1280x720
+//    private static final int MINIMUM_PREVIEW_SIZE = 500;       // 1000일때, S6와 Note5는 1088x1088 // 500일때 1280x720
+    private static final int MINIMUM_PREVIEW_SIZE = 600;       // 1000일때, S6와 Note5는 1088x1088 // 500일때 1280x720
 
     public static final String LABEL_NAME = "LABEL_NAME";
 
@@ -92,6 +102,7 @@ public class CameraConnectionFragment extends Fragment {
     //private TextView mTextView;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+    private static final String FRAGMENT_DIALOG = "dialog";
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -129,18 +140,25 @@ public class CameraConnectionFragment extends Fragment {
     //member label name
     private String mLabel;
 
-    private float mEyeStartLeft;
-    private float mEyeStartTop;
-    private TextView mStateTextView;
-
     public static final int EYE_BOUNDARY_STEADY_STATE = 1;
     public static final int EYE_BOUNDARY_UNSTABLE_STATE = 2;
+    public static final int FULL_CAPTURE_COMPLETE = 3;
+    public static final int LOAD_VIEW_COMPLETE = 4;
+
+    private CustomView eyeOverlayView;
+    private RelativeLayout surfaceView;
+//    private TextView mStateTextView;
+
+    private int DSI_height;
+    private int DSI_width;
 
     // 카메라의 상태가 변경되었을 때 상태콜백함수(StateCallback)가 호출된다.
     private final CameraDevice.StateCallback stateCallback =
             new CameraDevice.StateCallback() {
                 @Override
                 public void onOpened(final CameraDevice cd) {
+                    Dlog.d("CameraDevice.StateCallback::onOpend");
+
                     // 카메라 켜졌을 때  ( We start camera preview here.)
                     cameraOpenCloseLock.release();
                     cameraDevice = cd;
@@ -149,6 +167,8 @@ public class CameraConnectionFragment extends Fragment {
 
                 @Override
                 public void onDisconnected(final CameraDevice cd) {
+                    Dlog.d("CameraDevice.StateCallback::onDisconnected");
+
                     // 카메라 꺼졌을 때
                     cameraOpenCloseLock.release();
                     cd.close();
@@ -161,6 +181,8 @@ public class CameraConnectionFragment extends Fragment {
 
                 @Override
                 public void onError(final CameraDevice cd, final int error) {
+                    Dlog.d("CameraDevice.StateCallback::onError");
+
                     cameraOpenCloseLock.release();
                     cd.close();
                     cameraDevice = null;
@@ -175,9 +197,12 @@ public class CameraConnectionFragment extends Fragment {
                 }
             };
 
+
     public static CameraConnectionFragment newInstance() {
+        Dlog.d("CameraConnectionFragment::newInstance");
         return new CameraConnectionFragment();
     }
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -199,8 +224,6 @@ public class CameraConnectionFragment extends Fragment {
             mLabel = label;
             intent.removeExtra(LABEL_NAME);
         }
-
-        mOnGetPreviewListener.setHandler(new StateTextChangeHandler());
     }
 
 
@@ -210,6 +233,7 @@ public class CameraConnectionFragment extends Fragment {
         public void onSurfaceTextureAvailable(
                 final SurfaceTexture texture, final int width, final int height) {
             openCamera(width, height);
+            eyeOverlayView.setAspectRatio(width, height);
         }
 
         @Override
@@ -242,41 +266,49 @@ public class CameraConnectionFragment extends Fragment {
     @Override
     public View onCreateView(
             final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState) {
+        Dlog.d("onCreateView");
         return inflater.inflate(R.layout.fragment_camera_connection, container, false);
     }
 
 
     @Override
     public void onViewCreated(final View view, final Bundle savedInstanceState) {
-        // 카메라의 화면을 보여주는 TextureView
+        Dlog.d("onViewCreated");
         textureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        RelativeLayout surfaceView = (RelativeLayout)view.findViewById(R.id.view);
-        CustomView eyeOverlayView = new CustomView(this);
+        surfaceView = (RelativeLayout)view.findViewById(R.id.view);
+        eyeOverlayView = new CustomView(this);
         surfaceView.addView(eyeOverlayView);
-        mStateTextView = getActivity().findViewById(R.id.state_textview);
 
-        mEyeStartLeft = eyeOverlayView.getStartLeft();
-        mEyeStartTop = eyeOverlayView.getStartTop();
+        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        DSI_height = displayMetrics.heightPixels;
+        DSI_width = displayMetrics.widthPixels;
     }
 
 
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
+        Dlog.d("CameraConnectionFragment::onActivityCreated");
+        /*mStateTextView = getActivity().findViewById(R.id.state_textview);
+        Dlog.d("mStateTextView : " + mStateTextView);*/
         super.onActivityCreated(savedInstanceState);
     }
+
 
     @Override
     public void onResume() {
         super.onResume();
+        Dlog.d("onResume");
         startBackgroundThread();
         // 화면이 꺼지고 다시 켜지면 SurfaceTexture는 이미 사용 가능하며 "onSurfaceTextureAvailable"은 호출되지 않음
         // 이 경우 카메라를 열고 여기에서 미리보기를 시작할 수 있음
         // 그렇지 않으면 표면이 SurfaceTextureListener에서 준비 될 때까지 기다린다.
         // else 실행 후 if 실행
        if (textureView.isAvailable()) {
-           // onSurfaceTextureAvailable 이벤트 실생. 이 이벤트 안에서 openCamera()  수행
+           // onSurfaceTextureAvailable 이벤트 실행. 이 이벤트 안에서 openCamera()  수행
            openCamera(textureView.getWidth(), textureView.getHeight());
-        } else {
+           eyeOverlayView.setAspectRatio(textureView.getWidth(), textureView.getHeight());
+       } else {
             // textureView에 Listener를 등록하고 (setSurfaceTextureListener)
             textureView.setSurfaceTextureListener(surfaceTextureListener);
         }
@@ -285,6 +317,7 @@ public class CameraConnectionFragment extends Fragment {
 
     @Override
     public void onPause() {
+        Dlog.d("onPause");
         closeCamera();
         stopBackgroundThread();
         super.onPause();
@@ -295,6 +328,7 @@ public class CameraConnectionFragment extends Fragment {
     @SuppressLint("LongLogTag")
     @DebugLog
     private void openCamera(final int width, final int height) {
+        Dlog.d("openCamera");
         setUpCameraOutputs(width, height);
         configureTransform(width, height);
         final Activity activity = getActivity();
@@ -306,6 +340,7 @@ public class CameraConnectionFragment extends Fragment {
             if (ActivityCompat.checkSelfPermission(this.getActivity(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 //Timber.tag(TAG).w("checkSelfPermission CAMERA");
             }
+            setAspectRatioTextureView(width, height);
             manager.openCamera(cameraId, stateCallback, backgroundHandler);
             //Timber.tag(TAG).d("open Camera");
         } catch (final CameraAccessException e) {
@@ -320,6 +355,7 @@ public class CameraConnectionFragment extends Fragment {
     @DebugLog
     @SuppressLint("LongLogTag")
     private void setUpCameraOutputs(final int width, final int height) {
+        Dlog.d("setUpCameraOutputs");
         final Activity activity = getActivity();
         final CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
@@ -369,16 +405,53 @@ public class CameraConnectionFragment extends Fragment {
             Log.i(TAG,"Exception!", e);
         } catch (final NullPointerException e) {
             // Currently an NPE is thrown when the Camera2API is used but not supported on the device this code runs.
-            Log.i(TAG,"This device doesn\\'t support Camera2 API");
+            ErrorDialog.newInstance(getString(R.string.camera_error))
+                    .show(getChildFragmentManager(), FRAGMENT_DIALOG);
         }
     }
 
 
-    /* 카메라가 지원하는 크기의 선택을 감안할 때, 너비와 높이가 각각의 요청 된 값만큼 크고
-     * 종횡비가 지정된 값과 일치하는 가장 작은 것을 선택합니다.*/
+    /**
+     * support full screen in preivew
+     * @param ResolutionWidth
+     * @param ResolutionHeight
+     */
+    private void setAspectRatioTextureView(int ResolutionWidth , int ResolutionHeight )
+    {
+        if(ResolutionWidth > ResolutionHeight){
+            int newWidth = DSI_width;
+            int newHeight = ((DSI_width * ResolutionWidth)/ResolutionHeight);
+            updateTextureViewSize(newWidth,newHeight);
+
+        }else {
+            int newWidth = DSI_width;
+            int newHeight = ((DSI_width * ResolutionHeight)/ResolutionWidth);
+            updateTextureViewSize(newWidth,newHeight);
+        }
+
+    }
+
+
+    /**
+     * update preview size
+     * @param viewWidth
+     * @param viewHeight
+     */
+    private void updateTextureViewSize(int viewWidth, int viewHeight) {
+        Log.d(TAG, "TextureView Width : " + viewWidth + " TextureView Height : " + viewHeight);
+        textureView.setLayoutParams(new FrameLayout.LayoutParams(viewWidth, viewHeight));
+    }
+
+
+    /**
+     * 카메라가 지원하는 크기의 선택을 감안할 때, 너비와 높이가 각각의 요청 된 값만큼 크고
+     * 종횡비가 지정된 값과 일치하는 가장 작은 것을 선택합니다.
+     */
     @SuppressLint("LongLogTag")
     @DebugLog
     private static Size  chooseOptimalSize( final Size[] choices, final int width, final int height, final Size aspectRatio) {
+        Dlog.d("chooseOptimalSize");
+
         // 적어도 미리보기 Surface만큼 큰 지원 해상도를 "수집"되어야 한다.
         final List<Size> bigEnough = new ArrayList<Size>();
         for (final Size option : choices) {
@@ -405,6 +478,7 @@ public class CameraConnectionFragment extends Fragment {
 
     @DebugLog
     private void closeCamera() {
+        Dlog.d("closeCamera");
         try {
             cameraOpenCloseLock.acquire();
             if (null != captureSession) {
@@ -432,9 +506,11 @@ public class CameraConnectionFragment extends Fragment {
 
     @DebugLog
     private void startBackgroundThread() {
+        Dlog.d("startBackgroundThread");
+
         backgroundThread = new HandlerThread("ImageListener");
         backgroundThread.start();
-        backgroundHandler = new Handler(backgroundThread.getLooper());
+        backgroundHandler = new UIChangeHandler(backgroundThread.getLooper());
 
         inferenceThread = new HandlerThread("InferenceThread");
         inferenceThread.start();
@@ -486,17 +562,7 @@ public class CameraConnectionFragment extends Fragment {
                 final CameraCaptureSession session,
                 final CaptureRequest request,
                 final TotalCaptureResult result) {
-
             super.onCaptureCompleted(session, request, result);
-
-            if (mOnGetPreviewListener.mNumCrop == 5){
-
-                Log.i(TAG,"mOnGetPreviewListener: "+String.valueOf(mOnGetPreviewListener.mNumCrop));
-
-                CameraActivity activity = (CameraActivity) getActivity();
-                activity.goMain(mOnGetPreviewListener.bitmap_left, mOnGetPreviewListener.bitmap_right);
-
-            }
         }
     };
 
@@ -505,6 +571,7 @@ public class CameraConnectionFragment extends Fragment {
     @SuppressLint("LongLogTag")
     @DebugLog
     private void createCameraPreviewSession() {
+        Dlog.d("createCameraPreviewSession");
         try {
             final SurfaceTexture texture = textureView.getSurfaceTexture();
             assert texture != null;
@@ -537,6 +604,7 @@ public class CameraConnectionFragment extends Fragment {
                                 previewRequestBuilder.set(
                                         CaptureRequest.CONTROL_AF_MODE,
                                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+
                                 // Flash is automatically enabled when necessary.
                                 previewRequestBuilder.set(
                                         CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
@@ -559,13 +627,15 @@ public class CameraConnectionFragment extends Fragment {
             Log.i(TAG, "Exception!", e);
         }
 
-        mOnGetPreviewListener.initialize(getActivity().getApplicationContext(), getActivity().getAssets(), inferenceHandler, mLabel);
+        mOnGetPreviewListener.initialize(getActivity().getApplicationContext(), getActivity().getAssets(), inferenceHandler, backgroundHandler, mLabel, eyeOverlayView, textureView);
     }
 
 
      // 이 메소드는 setUpCameraOutputs에서 카메라 미리보기 크기(readerSize)가 결정되고, 보여주는 화면의 크기(textureView)가 고정 된 후에 호출해야합니다.
     @DebugLog
     private void configureTransform(final int viewWidth, final int viewHeight) {   //viewWidth/viewHeight: textureView의 w,h
+        Dlog.d("configureTransform");
+
         final Activity activity = getActivity();
         if (null == textureView || null == readerSize || null == activity) {
             return;
@@ -613,7 +683,11 @@ public class CameraConnectionFragment extends Fragment {
     }
 
 
-    public class StateTextChangeHandler extends Handler{
+    public class UIChangeHandler extends Handler {
+
+        public UIChangeHandler(Looper looper) {
+            super(looper);
+        }
 
         @Override
         public void handleMessage(Message msg) {
@@ -621,13 +695,65 @@ public class CameraConnectionFragment extends Fragment {
 
             switch (msg.what){
                 case EYE_BOUNDARY_STEADY_STATE:
-                    mStateTextView.setText(R.string.steady_state_text);
+                    Dlog.d("EYE_BOUNDARY_STEADY_STATE");
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            /*mStateTextView.setText(R.string.steady_state_text);
+                            mStateTextView.setTextColor(getResources().getColor(R.color.BlueOrchid));*/
+                        }
+                    });
                     break;
                 case EYE_BOUNDARY_UNSTABLE_STATE:
-                    mStateTextView.setText(R.string.unstable_state_text);
+                    Dlog.d("EYE_BOUNDARY_UNSTABLE_STATE");
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            /*mStateTextView.setText(R.string.unstable_state_text);
+                            mStateTextView.setTextColor(getResources().getColor(R.color.Red));*/
+                        }
+                    });
+                    break;
+                case FULL_CAPTURE_COMPLETE:
+                    Dlog.d("FULL_CAPTURE_COMPLETE");
+                    ((CameraActivity)getActivity()).goMain(mOnGetPreviewListener.bitmap_left, mOnGetPreviewListener.bitmap_right);
+                    break;
+                case LOAD_VIEW_COMPLETE:
+                    Dlog.d("LOAD_VIEW_COMPLETE");
+                    ((CameraActivity)getActivity()).stopLoadingAnimation();
                     break;
             }
         }
+    }
+
+    /**
+     * Shows an error message dialog.
+     */
+    public static class ErrorDialog extends DialogFragment {
+
+        private static final String ARG_MESSAGE = "message";
+
+        public static ErrorDialog newInstance(String message) {
+            ErrorDialog dialog = new ErrorDialog();
+            Bundle args = new Bundle();
+            args.putString(ARG_MESSAGE, message);
+            dialog.setArguments(args);
+            return dialog;
+        }
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            final Activity activity = getActivity();
+            return new AlertDialog.Builder(activity)
+                    .setMessage(getArguments().getString(ARG_MESSAGE))
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            activity.finish();
+                        }
+                    }).create();
+        }
+
     }
 
 }

@@ -14,6 +14,7 @@ import android.view.View;
 
 import com.tzutalin.dlibtest.CameraConnectionFragment;
 import com.tzutalin.dlibtest.Dlog;
+import com.tzutalin.dlibtest.OnGetImageListener;
 import com.tzutalin.dlibtest.R;
 
 /**
@@ -27,8 +28,14 @@ public class CustomView extends View {
     private float mRatioHeight = 0;
     private float mEyeWidth = 0;
     private float mEyeHeight = 0;
-    private float mStartLeft = 0;
-    private float mStartTop = 0;
+    private float mStartRightX = 0;
+    private float mStartRightY = 0;
+    private float mEndRightX = 0;
+    private float mEndRightY = 0;
+    private float mStartLeftX = 0;
+    private float mStartLeftY = 0;
+    private float mEndLeftX = 0;
+    private float mEndLeftY = 0;
     private float mEye2Eye = 0;
 
     public float getEyeWidth() {
@@ -39,17 +46,27 @@ public class CustomView extends View {
         return mEyeHeight;
     }
 
-    public float getStartLeft() {
-        return mStartLeft;
-    }
+    public float getStartRightX() { return mStartRightX; }
 
-    public float getStartTop() {
-        return mStartTop;
+    public float getStartRightY() {
+        return mStartRightY;
     }
 
     public float getEye2Eye() {
         return mEye2Eye;
     }
+
+    public float getStartLeftX() { return mStartLeftX; }
+
+    public float getStartLeftY() { return mStartLeftY; }
+
+    public float getEndRightX() { return mEndRightX; }
+
+    public float getEndRightY() { return mEndRightY; }
+
+    public float getEndLeftX() { return mEndLeftX; }
+
+    public float getEndLeftY() { return mEndLeftY; }
 
     public CustomView(CameraConnectionFragment context) {
         super(context.getActivity().getBaseContext());
@@ -57,43 +74,92 @@ public class CustomView extends View {
         setBackgroundColor(Color.TRANSPARENT);
     }
 
-
     public void setAspectRatio(final int width, final int height) {
-        if (width < 0 || height < 0) {
+        Dlog.d("setAspectRatio");
+        if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException("Size cannot be negative.");
         }
 
         mRatioWidth = width;
         mRatioHeight = height;
 
-        float hundredDp = TypedValue.applyDimension( TypedValue.COMPLEX_UNIT_DIP, 100,
+        final float hundredDp = TypedValue.applyDimension( TypedValue.COMPLEX_UNIT_DIP, 100,
                 getResources().getDisplayMetrics() );
 
-        mEyeWidth = mRatioWidth/9;
-        mEyeHeight = mRatioHeight/20;
-        mStartLeft = mEyeWidth * 3;
-        mStartTop = (mEyeHeight * 2) + hundredDp;
-        mEye2Eye = mEyeWidth;
-        mBitmap = Bitmap.createScaledBitmap(mBitmap, (int)mEyeWidth, (int)mEyeHeight,  true);
+        mEyeWidth = mRatioWidth/5;
+        mEyeHeight = mRatioHeight/7;
 
-        Dlog.d("mRatioHeight  : " + mRatioHeight );
-        Dlog.d("(int)mEyeHeight  : " + (int)mEyeHeight );
-        Dlog.d("(int)mEyeWidth  : " + (int)mEyeWidth );
+        mStartRightX = mEyeWidth * 1;
+//        mStartRightY = (mEyeHeight * 2) + hundredDp;
+//        mStartRightY = (mEyeHeight * 4);
+        mStartRightY = mRatioHeight - mEyeHeight;
+
+        mEndRightX = mStartRightX + mEyeWidth;
+        mEndRightY = mStartRightY + mEyeHeight;
+
+        mEye2Eye = mEyeWidth/2;
+//        mEye2Eye = mEyeWidth;
+//        mEye2Eye = 200;
+
+        mStartLeftX = mStartRightX + mEyeWidth + mEye2Eye;
+        mStartLeftY = mStartRightY;
+
+        mEndLeftX = mStartLeftX + mEyeWidth;
+        mEndLeftY = mStartLeftY + mEyeHeight;
+
+        Dlog.d("mStartRightX : " + mStartRightX);
+        Dlog.d("mStartRightY : " + mStartRightY);
+
+        mBitmap = Bitmap.createScaledBitmap(mBitmap, (int)mEyeWidth, (int)mEyeHeight,  true);
+//        mBitmap = Bitmap.createScaledBitmap(mBitmap, 220, 200,  true);
+
+        // onDraw 호출
+        invalidate();
     }
 
 
     @Override
     protected void onDraw(Canvas canvas) {
+        Dlog.d("onDraw");
         super.onDraw(canvas);
-        canvas.drawBitmap(mBitmap, mStartLeft, mStartTop, null);
-        canvas.drawBitmap(mBitmap, mStartLeft + mEyeWidth + mEye2Eye, mStartTop, null);
+        canvas.drawBitmap(mBitmap, mStartRightX, mStartRightY, null);
+        canvas.drawBitmap(mBitmap, mStartLeftX, mStartLeftY, null);
     }
 
 
-    @Override
+    /*@Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
         Dlog.d("onSizeChanged");
+        Dlog.d("width : " + w);
+        Dlog.d("height : " + h);
+        super.onSizeChanged(w, h, oldw, oldh);
         setAspectRatio(w, h);
+    }*/
+
+
+    /*@Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        Dlog.d("onLayout");
+        setAspectRatio(right, bottom);
+        super.onLayout(changed, left, top, right, bottom);
+    }*/
+
+
+    public void covertPreviewRatio(int ratioWidth, int ratioHeight){
+
+        if(ratioWidth == 0 || ratioHeight == 0) return;
+
+        mStartRightX = mStartRightX * ratioWidth;
+        mStartRightY = mStartRightY * ratioHeight;
+
+        mEndRightX = mEndRightX * ratioWidth;
+        mEndRightY = mEndRightY * ratioHeight;
+
+        mStartLeftX = mStartLeftX * ratioWidth;
+        mStartLeftY = mStartLeftY * ratioHeight;
+
+        mEndLeftX = mEndLeftX * ratioWidth;
+        mEndLeftY = mEndLeftY * ratioHeight;
+
     }
 }

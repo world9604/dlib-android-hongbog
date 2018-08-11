@@ -5,10 +5,11 @@
     <string name="left_guide_eye">왼쪽 가이드 눈</string>
     <string name="right_guide_eye">오른쪽 가이드 눈</string>
     <string name="unstable_state_text">눈 모양에 눈을 되주세요</string>
-    <string name="steady_state_text">눈 모양에 눈을 되주세요</string>
+    <string name="steady_state_text">눈 위치를 유지해주세요</string>
     <string name="develop_mode">개발자 모드</string>
     <string name="verification">인식</string>
     <string name="enroll">등록</string>
     <string name="label_result">Label : </string>
     <string name="result_text">결과값</string>
+    <string name="camera_error">This device doesn\'t support Camera2 API.</string>
 </resources>

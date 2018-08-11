@@ -11,7 +11,7 @@ import java.util.ArrayList;
 /**
  * A VisionDetRet contains all the information identifying the location and confidence value of the detected object in a bitmap.
  */
-public final class VisionDetRet {
+public final class VisionDetRet extends EyePoint{
     private String mLabel;
     private float mConfidence;
     private int mLeft;

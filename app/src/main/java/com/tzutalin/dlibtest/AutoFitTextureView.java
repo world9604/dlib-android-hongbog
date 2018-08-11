@@ -55,8 +55,11 @@ public class AutoFitTextureView extends TextureView {
     mRatioWidth = width;
     mRatioHeight = height;
 
+    Dlog.d("setAspectRatio::mRatioWidth : " + mRatioWidth);
+    Dlog.d("setAspectRatio::mRatioHeight : " + mRatioHeight);
+
     // onMeasure을 재호출 하여 layout size를 조절한다.
-    //requestLayout();
+    requestLayout();
   }
 
   @Override
@@ -65,14 +68,37 @@ public class AutoFitTextureView extends TextureView {
     final int width = MeasureSpec.getSize(widthMeasureSpec);
     final int height = MeasureSpec.getSize(heightMeasureSpec);
 
+    Dlog.d("onMeasure::width : " + width);
+    Dlog.d("onMeasure::height : " + height);
+
     if (0 == mRatioWidth || 0 == mRatioHeight) {
+
+      // requestLayout 호출하지 않을시 (width, height)가 preview Size
       setMeasuredDimension(width, height);
+      Dlog.d("1111" );
+
     } else {
+
       if (width < height * mRatioWidth / mRatioHeight) {
+
+        // requestLayout 호출할 시 (width, width * mRatioHeight / mRatioWidth)가 preview Size
         setMeasuredDimension(width, width * mRatioHeight / mRatioWidth);
+        Dlog.d("2222" );
+
       } else {
+
         setMeasuredDimension(height * mRatioWidth / mRatioHeight, height);
+        Dlog.d("3333" );
+
       }
     }
+  }
+
+  public int getRatioWidth() {
+    return mRatioWidth;
+  }
+
+  public int getRatioHeight() {
+    return mRatioHeight;
   }
 }

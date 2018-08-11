@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.tzutalin.dlibtest.MainActivity;
 import com.tzutalin.dlibtest.R;
 import com.tzutalin.dlibtest.ResultProb;
 import com.tzutalin.dlibtest.ResultProbList;
@@ -29,6 +30,9 @@ public class ResultActivity extends AppCompatActivity {
         setContentView(R.layout.activity_result);
         initView();
 
+        // loading activity start
+//        startActivity(new Intent(this, LoadingActivity.class));
+
         Intent intent = getIntent();
         Bundle bundle = intent.getExtras();
         ResultProbList resultProbList = classifier.Verification(bundle);
@@ -41,6 +45,14 @@ public class ResultActivity extends AppCompatActivity {
         mLeftImageView = (ImageView)findViewById(R.id.detect_eye_left_image);
         mRightImageView = (ImageView)findViewById(R.id.detect_eye_right_image);
     }
+
+
+   /* @Override
+    public void onBackPressed() {
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
+        finish();
+    }*/
 
 
     private void setResult(ResultProbList resultProbList){

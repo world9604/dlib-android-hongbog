@@ -21,7 +21,6 @@
             android:configChanges="orientation|screenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -31,7 +30,9 @@
         <activity android:name="com.hongbog.view.InfoActivity" />
         <activity android:name="com.hongbog.view.ResultTestActivity" />
         <activity android:name="com.hongbog.view.ResultActivity" />
-        <activity android:name="com.hongbog.view.LoadingActivity" />
+        <activity
+            android:name="com.hongbog.view.LoadingActivity"
+            android:theme="@style/AppTheme.NoActionBar2"/>
     </application>
 
 </manifest>

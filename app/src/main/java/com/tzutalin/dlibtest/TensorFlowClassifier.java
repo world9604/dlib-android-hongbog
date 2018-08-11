@@ -7,6 +7,10 @@ import android.os.Bundle;
 import android.support.v4.os.TraceCompat;
 import android.util.Log;
 
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfDouble;
+import org.opencv.imgproc.Imgproc;
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
 
 import java.io.BufferedReader;
@@ -16,6 +20,9 @@ import java.util.ArrayList;
 import java.util.Vector;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
+import static org.opencv.core.CvType.CV_32F;
+import static org.opencv.core.CvType.CV_8UC1;
 
 public class TensorFlowClassifier {
 
@@ -63,7 +70,7 @@ public class TensorFlowClassifier {
 
     private TensorFlowInferenceInterface tii;
 
-    private static AssetManager mAssetManager;
+    private AssetManager mAssetManager = null;
 
     private TensorFlowClassifier() {}
 
@@ -81,28 +88,30 @@ public class TensorFlowClassifier {
      */
     public void initTensorFlowAndLoadModel(AssetManager assetManager) {
 
-        mAssetManager = assetManager;
+        if(mAssetManager == null){
+            mAssetManager = assetManager;
 
-        Executor executor = Executors.newSingleThreadExecutor();
+            Executor executor = Executors.newSingleThreadExecutor();
 
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    createClassifier(
-                            mAssetManager,
-                            MODEL_FILE,
-                            LABEL_FILE,
-                            WIDTHS,
-                            HEIGHTS,
-                            RIGHT_INPUT_NAMES,
-                            LEFT_INPUT_NAMES,
-                            OUTPUT_NAMES);
-                } catch (final Exception e) {
-                    throw new RuntimeException("Error initializing TensorFlow!", e);
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        createClassifier(
+                                mAssetManager,
+                                MODEL_FILE,
+                                LABEL_FILE,
+                                WIDTHS,
+                                HEIGHTS,
+                                RIGHT_INPUT_NAMES,
+                                LEFT_INPUT_NAMES,
+                                OUTPUT_NAMES);
+                    } catch (final Exception e) {
+                        throw new RuntimeException("Error initializing TensorFlow!", e);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
 
@@ -273,7 +282,7 @@ public class TensorFlowClassifier {
     }
 
 
-    private static float[] grayScaleAndNorm(Bitmap bitmap) {
+    /*private static float[] grayScaleAndNorm(Bitmap bitmap) {
         int mWidth = bitmap.getWidth();
         int mHeight = bitmap.getHeight();
 
@@ -290,5 +299,45 @@ public class TensorFlowClassifier {
             norm_pixels[i] = grayPixel / 255.0f;
         }
         return norm_pixels;
+    }*/
+
+
+    private float[] grayScale_Equalization_Norm (Bitmap bitmap) {
+
+        Mat matbit = new Mat(bitmap.getWidth(), bitmap.getHeight(), CV_32F);  //CV_32F   CV_32FC3 (CV_32SC3: 32bit-float)  CV_8UC4
+        Mat matGray = new Mat();
+        Mat matGrayEquli= new Mat();
+        MatOfDouble mean = new MatOfDouble();
+        MatOfDouble std = new MatOfDouble();
+
+        // 1. 입력으로 들어온 bitmap 이미지(ARGB_8888-32bit)를 Mat 형식으로 바꾼다.
+        Utils.bitmapToMat(bitmap, matbit);
+        Imgproc.cvtColor(matbit, matGray, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.equalizeHist(matGray, matGrayEquli);
+
+        // -----------------equalized 이미지 print
+        matGrayEquli.convertTo(matGrayEquli, CV_8UC1);  // CV_8UC1
+        Bitmap bitEqul = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(matGrayEquli, bitEqul);
+        ImageUtils.saveBitmap(bitEqul, "E");
+
+        //
+        int mWidth = bitEqul.getWidth();
+        int mHeight = bitEqul.getHeight();
+
+        int[] ori_pixels = new int[mWidth * mHeight];
+        float[] norm_pixels = new float[mWidth * mHeight];
+
+        bitEqul.getPixels(ori_pixels, 0, mWidth, 0, 0, mWidth, mHeight);
+
+        for (int i = 0; i < ori_pixels.length; i++) {
+            int grayPixel = ori_pixels[i];
+            if (grayPixel < 0) grayPixel = 0;
+            if (grayPixel > 255) grayPixel = 255;
+            norm_pixels[i] = grayPixel / 255.0f;
+        }
+
+        return norm_pixels;
     }
+
 }

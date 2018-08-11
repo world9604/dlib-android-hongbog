@@ -62,16 +62,19 @@ public class GforceFragment extends Fragment {
         super.onDestroy();
     }
 
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_gforce, container, false);
     }
 
+
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
     }
+
 
     public static GforceFragment newInstance() {
         // 다른 Fragment View 및 데이터로 교체시 사용

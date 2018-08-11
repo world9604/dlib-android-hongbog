@@ -22,7 +22,7 @@ public class FaceDet {
     // accessed by native methods
     @SuppressWarnings("unused")
     private long mNativeFaceDetContext;
-    private String mLandMarkPath = "";
+    private String mLandMarkPath = null;
 
     static {
         try {
@@ -33,6 +33,23 @@ public class FaceDet {
             Log.e(TAG, "library not found");
         }
     }
+
+    /*private FaceDet() {}
+
+    private static class SingleToneHolder {
+        static final FaceDet instance = new FaceDet();
+    }
+
+    public static FaceDet getInstance() {
+        return SingleToneHolder.instance;
+    }
+
+    public void setmLandMarkPath(String mLandMarkPath) {
+        if(this.mLandMarkPath == null){
+            this.mLandMarkPath = mLandMarkPath;
+            jniInit(mLandMarkPath);
+        }
+    }*/
 
     @SuppressWarnings("unused")
     public FaceDet() {
@@ -83,7 +100,6 @@ public class FaceDet {
             detect.mHightRight = detect.mEndRightY - detect.mStartRightY;
             detect.mWidthRight = detect.mEndRightX - detect.mStartRightX;
 
-
             // 왼쪽 눈 이미지 (42 ~ 47)
             detect.mStartLeftX = landmark.get(42).x ;
             detect.mEndLeftX = landmark.get(45).x;
@@ -99,6 +115,21 @@ public class FaceDet {
             }
             detect.mHightLeft = detect.mEndLeftY - detect.mStartLeftY;
             detect.mWidthLeft = detect.mEndLeftX - detect.mStartLeftX;
+
+            /**
+             * 눈 주위에 일정 거리를 가지지 않고
+             * 가득찬 눈의 좌표값을 얻어 온다.
+             */
+            detect.start_right_x = detect.mStartRightX;
+            detect.start_right_y = detect.mStartRightY;
+            detect.end_right_x = detect.mEndRightX;
+            detect.end_right_y = detect.mEndRightY;
+            detect.start_left_x = detect.mStartLeftX;
+            detect.start_left_y = detect.mStartLeftY;
+            detect.end_left_x = detect.mEndLeftX;
+            detect.end_left_y = detect.mEndLeftY;
+
+
             // 범위 재정의
             // 오른쪽 눈
             int h = detect.mHightRight;

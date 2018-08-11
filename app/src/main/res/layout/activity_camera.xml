@@ -70,16 +70,27 @@
         android:layout_height="match_parent"
         android:layout_alignParentTop="true"/>
 
-    <FrameLayout
-        android:id="@+id/state_container"
+    <!--<TextView
+        android:id="@+id/state_textview"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:layout_alignParentTop="true" />
+        android:gravity="center"
+        android:text="@string/unstable_state_text"
+        android:textAlignment="center"
+        android:textColor="@color/Red"
+        android:background="@android:color/background_dark"
+        android:textStyle="bold" />
 
     <FrameLayout
         android:id="@+id/gforce_container"
         android:layout_width="match_parent"
         android:layout_height="350dp"
-        android:layout_alignParentBottom="true"/>
+        android:layout_alignParentBottom="true"/>-->
+
+   <!-- <include
+        android:id="@+id/loading_layout"
+        layout="@layout/activity_loading"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>-->
 
 </RelativeLayout>

@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.tzutalin.dlibtest.CameraActivity;
+import com.tzutalin.dlibtest.MainActivity;
 import com.tzutalin.dlibtest.ParcelBitmap;
 import com.tzutalin.dlibtest.ParcelBitmapList;
 import com.tzutalin.dlibtest.R;
@@ -99,6 +100,14 @@ public class ResultTestActivity extends AppCompatActivity{
             //rightImg.setImageBitmap(BitmapFactory.decodeByteArray(testData, 0, WIDTHS[0] * HEIGHTS[0]));
         }
     }
+
+
+    /*@Override
+    public void onBackPressed() {
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
+        finish();
+    }*/
 
 
     private void setResult(ResultProbList resultProbList){
