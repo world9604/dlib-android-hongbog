@@ -2,16 +2,25 @@ package com.hongbog.view;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.tzutalin.dlibtest.Dlog;
 import com.tzutalin.dlibtest.MainActivity;
+import com.tzutalin.dlibtest.ParcelBitmap;
 import com.tzutalin.dlibtest.R;
 import com.tzutalin.dlibtest.ResultProb;
 import com.tzutalin.dlibtest.ResultProbList;
 import com.tzutalin.dlibtest.TensorFlowClassifier;
+import com.victor.loading.rotate.RotateLoading;
+
+import java.util.ArrayList;
 
 import static com.tzutalin.dlibtest.TensorFlowClassifier.HEIGHTS;
 import static com.tzutalin.dlibtest.TensorFlowClassifier.WIDTHS;
@@ -22,21 +31,55 @@ public class ResultActivity extends AppCompatActivity {
     private ImageView mLeftImageView;
     private ImageView mRightImageView;
     private TensorFlowClassifier classifier = TensorFlowClassifier.getInstance();
-
+    private RelativeLayout loadingLayout;
+    private RotateLoading rotateLoading;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_result);
+
         initView();
 
-        // loading activity start
-//        startActivity(new Intent(this, LoadingActivity.class));
+        startLoadingAnimation();
 
         Intent intent = getIntent();
         Bundle bundle = intent.getExtras();
-        ResultProbList resultProbList = classifier.Verification(bundle);
-        setResult(resultProbList);
+
+        new ClassficationAsyncTask().execute(bundle);
+    }
+
+
+    public void startLoadingAnimation() {
+
+        Dlog.d("startLoadingAnimation");
+
+        rotateLoading.start();
+        loadingLayout.setVisibility(View.VISIBLE);
+    }
+
+
+    public void stopLoadingAnimation() {
+
+        Dlog.d("stopLoadingAnimation");
+
+        loadingLayout.setVisibility(View.GONE);
+        rotateLoading.stop();
+    }
+
+
+    private class ClassficationAsyncTask extends AsyncTask<Bundle, Void, ResultProbList> {
+
+        @Override
+        protected ResultProbList doInBackground(Bundle... bundles) {
+            return classifier.Verification(bundles[0]);
+        }
+
+        @Override
+        protected void onPostExecute(ResultProbList resultProbs) {
+            setResult(resultProbs);
+            stopLoadingAnimation();
+        }
     }
 
 
@@ -44,6 +87,8 @@ public class ResultActivity extends AppCompatActivity {
         mTextView = (TextView)findViewById(R.id.label_textview);
         mLeftImageView = (ImageView)findViewById(R.id.detect_eye_left_image);
         mRightImageView = (ImageView)findViewById(R.id.detect_eye_right_image);
+        loadingLayout = (RelativeLayout) findViewById(R.id.loading_layout);
+        rotateLoading = (RotateLoading) findViewById(R.id.rotateloading);
     }
 
 

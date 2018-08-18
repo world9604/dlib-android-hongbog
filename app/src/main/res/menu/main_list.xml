@@ -2,8 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/developer_mode"
+        android:id="@+id/설정"
         android:title="@string/develop_mode"
         android:orderInCategory="100"/>
+    <item
+        android:id="@+id/developer_mode"
+        android:title="@string/develop_mode"
+        android:orderInCategory="10"/>
 
 </menu>

@@ -28,6 +28,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
@@ -46,12 +47,14 @@ import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
+import android.support.annotation.MainThread;
 import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
 import android.support.v4.app.ActivityCompat;
@@ -81,6 +84,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -93,8 +97,8 @@ public class CameraConnectionFragment extends Fragment {
     private static final String TAG = "i99";
 
     //카메라 미리보기 크기가 DESIRED_SIZE x DESIRED_SIZE 사각형을 포함 할 수있는 픽셀 크기로 가장 작은 프레임으로 선택됨
-//    private static final int MINIMUM_PREVIEW_SIZE = 500;       // 1000일때, S6와 Note5는 1088x1088 // 500일때 1280x720
-    private static final int MINIMUM_PREVIEW_SIZE = 600;       // 1000일때, S6와 Note5는 1088x1088 // 500일때 1280x720
+    private static final int MINIMUM_PREVIEW_SIZE = 500;       // 1000일때, S6와 Note5는 1088x1088 // 500일때 1280x720
+//    private static final int MINIMUM_PREVIEW_SIZE = 600;       // 1000일때, S6와 Note5는 1088x1088 // 500일때 1280x720
 
     public static final String LABEL_NAME = "LABEL_NAME";
 
@@ -127,6 +131,8 @@ public class CameraConnectionFragment extends Fragment {
     private HandlerThread inferenceThread;
     private Handler inferenceHandler;
 
+    private Handler UiHandler;
+
     private final Semaphore cameraOpenCloseLock = new Semaphore(1);
     private HandlerThread sensorThread;
     private Handler sensorHandler;
@@ -140,17 +146,23 @@ public class CameraConnectionFragment extends Fragment {
     //member label name
     private String mLabel;
 
-    public static final int EYE_BOUNDARY_STEADY_STATE = 1;
-    public static final int EYE_BOUNDARY_UNSTABLE_STATE = 2;
     public static final int FULL_CAPTURE_COMPLETE = 3;
     public static final int LOAD_VIEW_COMPLETE = 4;
+    public static final int QUALITY_CHECK = 5;
+    public static final int STOP_ACTIVITY = 6;
 
     private CustomView eyeOverlayView;
-    private RelativeLayout surfaceView;
-//    private TextView mStateTextView;
+    private RelativeLayout eyeOverlaySurfaceView;
+    private TextView mStateTextView;
+    private Size deviceLargestSize;
+    private FrameLayout gforceFrameLayout;
 
-    private int DSI_height;
-    private int DSI_width;
+    public static final int ENROLL_INPUT_DATA_SIZE = 3;
+    public static final int VERIFY_INPUT_DATA_SIZE = 5;
+
+    private Bitmap bitmap_both[];
+    private Bitmap bitmap_left[];
+    private Bitmap bitmap_right[];
 
     // 카메라의 상태가 변경되었을 때 상태콜백함수(StateCallback)가 호출된다.
     private final CameraDevice.StateCallback stateCallback =
@@ -223,6 +235,13 @@ public class CameraConnectionFragment extends Fragment {
         if(label != null && !"".equals(label)){
             mLabel = label;
             intent.removeExtra(LABEL_NAME);
+            bitmap_both = new Bitmap[ENROLL_INPUT_DATA_SIZE];
+            bitmap_left = new Bitmap[ENROLL_INPUT_DATA_SIZE];
+            bitmap_right = new Bitmap[ENROLL_INPUT_DATA_SIZE];
+        }else{
+            bitmap_both = new Bitmap[VERIFY_INPUT_DATA_SIZE];
+            bitmap_left = new Bitmap[VERIFY_INPUT_DATA_SIZE];
+            bitmap_right = new Bitmap[VERIFY_INPUT_DATA_SIZE];
         }
     }
 
@@ -233,7 +252,8 @@ public class CameraConnectionFragment extends Fragment {
         public void onSurfaceTextureAvailable(
                 final SurfaceTexture texture, final int width, final int height) {
             openCamera(width, height);
-            eyeOverlayView.setAspectRatio(width, height);
+//            eyeOverlayView.setAspectRatio(textureView.mTextureViewWidth, textureView.mTextureViewHeight, deviceLargestSize);
+//            surfaceView.invalidate();
         }
 
         @Override
@@ -275,23 +295,19 @@ public class CameraConnectionFragment extends Fragment {
     public void onViewCreated(final View view, final Bundle savedInstanceState) {
         Dlog.d("onViewCreated");
         textureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        surfaceView = (RelativeLayout)view.findViewById(R.id.view);
+        eyeOverlaySurfaceView = (RelativeLayout)view.findViewById(R.id.view);
         eyeOverlayView = new CustomView(this);
-        surfaceView.addView(eyeOverlayView);
-
-        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        DSI_height = displayMetrics.heightPixels;
-        DSI_width = displayMetrics.widthPixels;
+        eyeOverlaySurfaceView.addView(eyeOverlayView);
     }
 
 
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
         Dlog.d("CameraConnectionFragment::onActivityCreated");
-        /*mStateTextView = getActivity().findViewById(R.id.state_textview);
-        Dlog.d("mStateTextView : " + mStateTextView);*/
         super.onActivityCreated(savedInstanceState);
+
+        mStateTextView = getActivity().findViewById(R.id.state_textview);
+        gforceFrameLayout = getActivity().findViewById(R.id.gforce_container);
     }
 
 
@@ -307,7 +323,8 @@ public class CameraConnectionFragment extends Fragment {
        if (textureView.isAvailable()) {
            // onSurfaceTextureAvailable 이벤트 실행. 이 이벤트 안에서 openCamera()  수행
            openCamera(textureView.getWidth(), textureView.getHeight());
-           eyeOverlayView.setAspectRatio(textureView.getWidth(), textureView.getHeight());
+//           eyeOverlayView.setAspectRatio(textureView.mTextureViewWidth, textureView.mTextureViewHeight, deviceLargestSize);
+
        } else {
             // textureView에 Listener를 등록하고 (setSurfaceTextureListener)
             textureView.setSurfaceTextureListener(surfaceTextureListener);
@@ -340,7 +357,10 @@ public class CameraConnectionFragment extends Fragment {
             if (ActivityCompat.checkSelfPermission(this.getActivity(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 //Timber.tag(TAG).w("checkSelfPermission CAMERA");
             }
-            setAspectRatioTextureView(width, height);
+
+            //full screen method
+            //setAspectRatioTextureView(width, height);
+
             manager.openCamera(cameraId, stateCallback, backgroundHandler);
             //Timber.tag(TAG).d("open Camera");
         } catch (final CameraAccessException e) {
@@ -386,6 +406,8 @@ public class CameraConnectionFragment extends Fragment {
             // map.getOutputSizes: 카메라에서 지원하는 크기 목록이 Size 객체의 배열로 반환됨, 이 값을 이용하여 사진 촬영 시 사진 크기를 지정할 수 있습니다.
             final Size largest = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.YUV_420_888)), new CompareSizesByArea());
 
+            deviceLargestSize = largest;
+
             // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera, bus' bandwidth limitation, resulting in gorgeous previews but the storage of garbage capture data.
             readerSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class), width, height, largest);
 
@@ -416,8 +438,7 @@ public class CameraConnectionFragment extends Fragment {
      * @param ResolutionWidth
      * @param ResolutionHeight
      */
-    private void setAspectRatioTextureView(int ResolutionWidth , int ResolutionHeight )
-    {
+    /*private void setAspectRatioTextureView( int ResolutionWidth , int ResolutionHeight ){
         if(ResolutionWidth > ResolutionHeight){
             int newWidth = DSI_width;
             int newHeight = ((DSI_width * ResolutionWidth)/ResolutionHeight);
@@ -428,8 +449,7 @@ public class CameraConnectionFragment extends Fragment {
             int newHeight = ((DSI_width * ResolutionHeight)/ResolutionWidth);
             updateTextureViewSize(newWidth,newHeight);
         }
-
-    }
+    }*/
 
 
     /**
@@ -437,10 +457,10 @@ public class CameraConnectionFragment extends Fragment {
      * @param viewWidth
      * @param viewHeight
      */
-    private void updateTextureViewSize(int viewWidth, int viewHeight) {
+    /*private void updateTextureViewSize(int viewWidth, int viewHeight) {
         Log.d(TAG, "TextureView Width : " + viewWidth + " TextureView Height : " + viewHeight);
         textureView.setLayoutParams(new FrameLayout.LayoutParams(viewWidth, viewHeight));
-    }
+    }*/
 
 
     /**
@@ -510,7 +530,7 @@ public class CameraConnectionFragment extends Fragment {
 
         backgroundThread = new HandlerThread("ImageListener");
         backgroundThread.start();
-        backgroundHandler = new UIChangeHandler(backgroundThread.getLooper());
+        backgroundHandler = new Handler(backgroundThread.getLooper());
 
         inferenceThread = new HandlerThread("InferenceThread");
         inferenceThread.start();
@@ -519,6 +539,8 @@ public class CameraConnectionFragment extends Fragment {
         sensorThread = new HandlerThread("SensorThread");
         sensorThread.start();
         sensorHandler = new Handler(sensorThread.getLooper());
+
+        UiHandler = new UIChangeHandler(Looper.getMainLooper());
     }
 
 
@@ -541,6 +563,8 @@ public class CameraConnectionFragment extends Fragment {
             sensorThread.join();
             sensorThread = null;
             sensorHandler = null;
+
+            UiHandler = null;
         } catch (final InterruptedException e) {
             Log.i(TAG, "error", e);
         }
@@ -627,13 +651,18 @@ public class CameraConnectionFragment extends Fragment {
             Log.i(TAG, "Exception!", e);
         }
 
-        mOnGetPreviewListener.initialize(getActivity().getApplicationContext(), getActivity().getAssets(), inferenceHandler, backgroundHandler, mLabel, eyeOverlayView, textureView);
+        mOnGetPreviewListener.initialize(getActivity().getApplicationContext(),
+                getActivity().getAssets(), inferenceHandler, backgroundHandler,
+                mLabel, eyeOverlayView, textureView, UiHandler,
+                bitmap_both, bitmap_left, bitmap_right);
     }
 
 
-     // 이 메소드는 setUpCameraOutputs에서 카메라 미리보기 크기(readerSize)가 결정되고, 보여주는 화면의 크기(textureView)가 고정 된 후에 호출해야합니다.
+    /**
+     *  이 메소드는 setUpCameraOutputs에서 카메라 미리보기 크기(readerSize)가 결정되고, 보여주는 화면의 크기(textureView)가 고정 된 후에 호출해야합니다.
+     */
     @DebugLog
-    private void configureTransform(final int viewWidth, final int viewHeight) {   //viewWidth/viewHeight: textureView의 w,h
+    private void configureTransform(final int viewWidth, final int viewHeight) {
         Dlog.d("configureTransform");
 
         final Activity activity = getActivity();
@@ -642,11 +671,6 @@ public class CameraConnectionFragment extends Fragment {
         }
         final int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
         final Matrix matrix = new Matrix();
-        //float viewH = viewHeight /4;
-        //float readerH = readerSize.getWidth() /4;
-        //final RectF viewRect = new RectF(0, viewH, viewWidth, viewHeight-viewHeight /4);
-        //final RectF bufferRect = new RectF(0, readerH, readerSize.getHeight(), readerSize.getWidth()-readerH);
-
         final RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
         final RectF bufferRect = new RectF(0, 0, readerSize.getHeight(), readerSize.getWidth());
         final float centerX = viewRect.centerX();
@@ -656,19 +680,62 @@ public class CameraConnectionFragment extends Fragment {
             bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
             matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
             final float scale = Math.max( (float) viewHeight / readerSize.getHeight(),  (float) viewWidth / readerSize.getWidth());
-            //final float scale = Math.max( (float) viewHeight / (readerSize.getHeight()/2),  (float) viewWidth / (readerSize.getWidth()/2));
-
             matrix.postScale(scale, scale, centerX, centerY);
             matrix.postRotate(90 * (rotation - 2), centerX, centerY);
         } else if (Surface.ROTATION_180 == rotation) {
             matrix.postRotate(180, centerX, centerY);
         }
-        matrix.setTranslate(0,-600);
-        float viewH = viewHeight /4;
-        RectF rect = new RectF(0, viewH, viewWidth, viewHeight-viewHeight /4);
-        //matrix.
 
+        int screenHeight = Resources.getSystem().getDisplayMetrics().heightPixels;
+        int statusBarHeight = screenHeight - viewHeight;
+
+        Dlog.d("statusBarHeight " + statusBarHeight);
+        Dlog.d("viewHeight " + viewHeight);
+        Dlog.d("screenHeight " + screenHeight);
+
+
+        /**
+         * mStateTextView.height 는 statusBar를 포함해서 전체 Display에 1/5
+         * gforceFrameLayout 는 전체 Display에 3/5
+         */
+        int division = (screenHeight/5) - statusBarHeight;
+        mStateTextView.getLayoutParams().height = division;
+        Dlog.d("division " + division);
+
+        int gforceHeightPixel = (screenHeight/5) * 3;
+        gforceFrameLayout.getLayoutParams().height = gforceHeightPixel;
+        Dlog.d("gforceHeightPixel " + gforceHeightPixel);
+
+
+        /**
+         * 눈이 카메라 가운데에 올수있도록 전체 Display에 1/5 이동
+         */
+        int yShift = (screenHeight/5);
+        Dlog.d("yShift " + yShift);
+
+        matrix.setTranslate(0, -yShift);
         textureView.setTransform(matrix);
+
+
+        /**
+         * textureView 와 eyeOverlaySurfaceView 에 TOP 좌표값을 맞추기 위해서
+         * 추후에 detected eye 좌표값과 비교 로직을 위해서
+         */
+        eyeOverlaySurfaceView.setTranslationY( -yShift );
+//        eyeOverlaySurfaceView.getLayoutParams().height = viewHeight;
+        Dlog.d("eyeOverlaySurfaceView height " + eyeOverlaySurfaceView.getLayoutParams().height);
+
+        eyeOverlayView.setAspectRatio(viewWidth, yShift, (yShift + yShift - statusBarHeight), statusBarHeight);
+    }
+
+
+    public static float dpFromPx(final Context context, final float px) {
+        return px / context.getResources().getDisplayMetrics().density;
+    }
+
+
+    public static float pxFromDp(final Context context, final float dp) {
+        return dp * context.getResources().getDisplayMetrics().density;
     }
 
 
@@ -694,37 +761,36 @@ public class CameraConnectionFragment extends Fragment {
             super.handleMessage(msg);
 
             switch (msg.what){
-                case EYE_BOUNDARY_STEADY_STATE:
-                    Dlog.d("EYE_BOUNDARY_STEADY_STATE");
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            /*mStateTextView.setText(R.string.steady_state_text);
-                            mStateTextView.setTextColor(getResources().getColor(R.color.BlueOrchid));*/
-                        }
-                    });
-                    break;
-                case EYE_BOUNDARY_UNSTABLE_STATE:
-                    Dlog.d("EYE_BOUNDARY_UNSTABLE_STATE");
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            /*mStateTextView.setText(R.string.unstable_state_text);
-                            mStateTextView.setTextColor(getResources().getColor(R.color.Red));*/
-                        }
-                    });
-                    break;
                 case FULL_CAPTURE_COMPLETE:
                     Dlog.d("FULL_CAPTURE_COMPLETE");
-                    ((CameraActivity)getActivity()).goMain(mOnGetPreviewListener.bitmap_left, mOnGetPreviewListener.bitmap_right);
+                    final Map<String, Bitmap[]> eyeBitmap = (Map<String, Bitmap[]>)msg.obj;
+
+                    if(eyeBitmap == null){
+                        ErrorDialog.newInstance("eyeBitmap is Null")
+                                .show(getFragmentManager(), this.getClass().getSimpleName());
+                    }
+
+                    CameraActivity activity = ((CameraActivity)getActivity());
+                    activity.goMain(eyeBitmap.get("bitmap_left"), eyeBitmap.get("bitmap_right"));
+                    break;
+                case STOP_ACTIVITY:
+                    Dlog.d("STOP_ACTIVITY");
+                    ((CameraActivity)getActivity()).finish();
                     break;
                 case LOAD_VIEW_COMPLETE:
                     Dlog.d("LOAD_VIEW_COMPLETE");
                     ((CameraActivity)getActivity()).stopLoadingAnimation();
                     break;
+                case QUALITY_CHECK:
+                    final String message = String.valueOf(msg.obj);
+                    Dlog.d("QUALITY_CHECK : " + message);
+                    mStateTextView.setText(message);
+                    mStateTextView.setTextColor(getResources().getColor(R.color.Red));
+                    break;
             }
         }
     }
+
 
     /**
      * Shows an error message dialog.

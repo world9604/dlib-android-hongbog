@@ -8,9 +8,11 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.os.Handler;
+import android.util.Size;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.RelativeLayout;
 
 import com.tzutalin.dlibtest.CameraConnectionFragment;
 import com.tzutalin.dlibtest.Dlog;
@@ -37,6 +39,8 @@ public class CustomView extends View {
     private float mEndLeftX = 0;
     private float mEndLeftY = 0;
     private float mEye2Eye = 0;
+    private float mViewTop = 0;
+    private float mStatusBarHeight = 0;
 
     public float getEyeWidth() {
         return mEyeWidth;
@@ -74,32 +78,36 @@ public class CustomView extends View {
         setBackgroundColor(Color.TRANSPARENT);
     }
 
-    public void setAspectRatio(final int width, final int height) {
+
+    public void setAspectRatio(final int width, final int height, final int drawStartTop, final int statusBarHeight) {
         Dlog.d("setAspectRatio");
+
         if (width <= 0 || height <= 0) {
-            throw new IllegalArgumentException("Size cannot be negative.");
+            Dlog.e("width <= 0 || height <= 0");
+            return;
         }
+
+        mViewTop = drawStartTop;
+        mStatusBarHeight = statusBarHeight;
+
+        Dlog.d("mViewTop : " + mViewTop);
+        Dlog.d("width : " + width);
+        Dlog.d("height : " + height);
+        Dlog.d("mStatusBarHeight : " + mStatusBarHeight);
 
         mRatioWidth = width;
         mRatioHeight = height;
 
-        final float hundredDp = TypedValue.applyDimension( TypedValue.COMPLEX_UNIT_DIP, 100,
-                getResources().getDisplayMetrics() );
+        mEyeWidth = mRatioWidth * (8f/35f);
+        mEyeHeight = mRatioHeight * (17f/35f);
 
-        mEyeWidth = mRatioWidth/5;
-        mEyeHeight = mRatioHeight/7;
-
-        mStartRightX = mEyeWidth * 1;
-//        mStartRightY = (mEyeHeight * 2) + hundredDp;
-//        mStartRightY = (mEyeHeight * 4);
-        mStartRightY = mRatioHeight - mEyeHeight;
+        mStartRightX = mRatioWidth * (9f/35f);
+        mStartRightY = mRatioHeight * (9f/35f);
 
         mEndRightX = mStartRightX + mEyeWidth;
         mEndRightY = mStartRightY + mEyeHeight;
 
-        mEye2Eye = mEyeWidth/2;
-//        mEye2Eye = mEyeWidth;
-//        mEye2Eye = 200;
+        mEye2Eye = mRatioWidth * (1f/35f);
 
         mStartLeftX = mStartRightX + mEyeWidth + mEye2Eye;
         mStartLeftY = mStartRightY;
@@ -107,14 +115,9 @@ public class CustomView extends View {
         mEndLeftX = mStartLeftX + mEyeWidth;
         mEndLeftY = mStartLeftY + mEyeHeight;
 
-        Dlog.d("mStartRightX : " + mStartRightX);
         Dlog.d("mStartRightY : " + mStartRightY);
 
         mBitmap = Bitmap.createScaledBitmap(mBitmap, (int)mEyeWidth, (int)mEyeHeight,  true);
-//        mBitmap = Bitmap.createScaledBitmap(mBitmap, 220, 200,  true);
-
-        // onDraw 호출
-        invalidate();
     }
 
 
@@ -122,44 +125,31 @@ public class CustomView extends View {
     protected void onDraw(Canvas canvas) {
         Dlog.d("onDraw");
         super.onDraw(canvas);
-        canvas.drawBitmap(mBitmap, mStartRightX, mStartRightY, null);
-        canvas.drawBitmap(mBitmap, mStartLeftX, mStartLeftY, null);
+        canvas.drawBitmap(mBitmap, mStartRightX, mViewTop + mStartRightY, null);
+        canvas.drawBitmap(mBitmap, mStartLeftX, mViewTop + mStartLeftY, null);
     }
 
 
-    /*@Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        Dlog.d("onSizeChanged");
-        Dlog.d("width : " + w);
-        Dlog.d("height : " + h);
-        super.onSizeChanged(w, h, oldw, oldh);
-        setAspectRatio(w, h);
-    }*/
-
-
-    /*@Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        Dlog.d("onLayout");
-        setAspectRatio(right, bottom);
-        super.onLayout(changed, left, top, right, bottom);
-    }*/
-
-
-    public void covertPreviewRatio(int ratioWidth, int ratioHeight){
+    /**
+     * @see CameraConnectionFragment::configureTransform()
+     * @param ratioWidth
+     * @param ratioHeight
+     */
+    public void convertPreviewRatio(float ratioWidth, float ratioHeight){
 
         if(ratioWidth == 0 || ratioHeight == 0) return;
 
         mStartRightX = mStartRightX * ratioWidth;
-        mStartRightY = mStartRightY * ratioHeight;
+        mStartRightY = (mViewTop + mStartRightY) * ratioHeight + mStatusBarHeight;
 
         mEndRightX = mEndRightX * ratioWidth;
-        mEndRightY = mEndRightY * ratioHeight;
+        mEndRightY = (mViewTop + mEndRightY) * ratioHeight + mStatusBarHeight;
 
         mStartLeftX = mStartLeftX * ratioWidth;
-        mStartLeftY = mStartLeftY * ratioHeight;
+        mStartLeftY = (mViewTop + mStartLeftY) * ratioHeight + mStatusBarHeight;
 
         mEndLeftX = mEndLeftX * ratioWidth;
-        mEndLeftY = mEndLeftY * ratioHeight;
+        mEndLeftY = (mViewTop + mEndLeftY) * ratioHeight + mStatusBarHeight;
 
     }
 }

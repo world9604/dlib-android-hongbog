@@ -18,8 +18,10 @@ package com.tzutalin.dlibtest;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -31,6 +33,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.hongbog.view.GforceFragment;
@@ -42,6 +45,7 @@ import java.util.ArrayList;
 
 import static com.tzutalin.dlibtest.MainActivity.ACTIVITY_FLOW_EXTRA;
 import static com.tzutalin.dlibtest.MainActivity.DEVELOP_MODE_EXTRA;
+import static com.tzutalin.dlibtest.MainActivity.ENROLL_EXTRA;
 import static com.tzutalin.dlibtest.MainActivity.VERIFY_EXTRA;
 
 /**
@@ -50,16 +54,12 @@ import static com.tzutalin.dlibtest.MainActivity.VERIFY_EXTRA;
 public class CameraActivity extends Activity {
 
     private static final String TAG = "i99";
-
     private static int OVERLAY_PERMISSION_REQ_CODE = 1;
-
     private long startTime;
-
     private RelativeLayout loadingLayout;
-
     private RotateLoading rotateLoading;
-
     private FrameLayout gforceFrameLayout;
+
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -80,19 +80,29 @@ public class CameraActivity extends Activity {
             getFragmentManager()
                 .beginTransaction()
                 .replace(R.id.detect_container, CameraConnectionFragment.newInstance())
-//                .replace(R.id.gforce_container, GforceFragment.newInstance())
-//                .replace(R.id.state_container, StateFragment.newInstance())
+                .replace(R.id.gforce_container, GforceFragment.newInstance())
                 .commit();
         }
+
+        loadingLayout = findViewById(R.id.loading_layout);
+        rotateLoading = findViewById(R.id.rotateloading);
+        gforceFrameLayout = findViewById(R.id.gforce_container);
+
+        startLoadingAnimation();
     }
 
 
     public void goMain(Bitmap bitmap_left[], Bitmap bitmap_right[]) {
 
+        if (bitmap_left == null || bitmap_right == null){
+            Dlog.e("bitmap_left || bitmap_right is Null, So Finish this Activity");
+            finish();
+        }
+
         ArrayList<ParcelBitmap> left_lst = new ArrayList<>();
         ArrayList<ParcelBitmap> right_lst = new ArrayList<>();
 
-        for (int i = 0; i <5; i++) {
+        for (int i = 0; i <bitmap_left.length; i++) {
             left_lst.add(new ParcelBitmap( bitmap_left[i] ));
             right_lst.add(new ParcelBitmap( bitmap_right[i] ));
         }
@@ -102,8 +112,13 @@ public class CameraActivity extends Activity {
         String mode = intent.getStringExtra(ACTIVITY_FLOW_EXTRA);
 
         if (mode != null && DEVELOP_MODE_EXTRA.equals(mode)) {
+            Dlog.d("CameraActivity ACTIVITY_FLOW_EXTRA : " + mode);
             intent.setClass(this, ResultTestActivity.class);
         }else if(mode != null && VERIFY_EXTRA.equals(mode)){
+            Dlog.d("CameraActivity ACTIVITY_FLOW_EXTRA : " + mode);
+            intent.setClass(this, ResultActivity.class);
+        }else if(mode != null && ENROLL_EXTRA.equals(mode)){
+            Dlog.d("CameraActivity ACTIVITY_FLOW_EXTRA : " + mode);
             intent.setClass(this, ResultActivity.class);
         }else{
             return;
@@ -115,13 +130,15 @@ public class CameraActivity extends Activity {
         bundle.putParcelableArrayList("LeftEyeList", left_lst);
         bundle.putParcelableArrayList("RightEyeList", right_lst);
         intent.putExtras(bundle);
+
         startActivity(intent);
         finish();
 
-        long endTime = System.currentTimeMillis();
-        long verificationtime = (endTime-startTime)/100;
-        Log.i(TAG, "Time= "+String.valueOf(verificationtime));
     }
+
+
+
+
 
 
     @Override
@@ -168,7 +185,7 @@ public class CameraActivity extends Activity {
                     Toast.makeText(CameraActivity.this, "CameraActivity\", \"SYSTEM_ALERT_WINDOW, permission not granted...", Toast.LENGTH_SHORT).show();
                 } else {
                     Dlog.d("Settings.canDrawOverlays!!!");
-                    Toast.makeText(CameraActivity.this, "Restart CameraActivity", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(CameraActivity.this, "Restart CameraActivity", Toast.LENGTH_SHORT).show();
                     Intent intent = getIntent();
                     startActivity(intent);
                     finish();
@@ -178,17 +195,22 @@ public class CameraActivity extends Activity {
     }
 
 
+    public void startLoadingAnimation() {
+
+        Dlog.d("startLoadingAnimation");
+
+        gforceFrameLayout.setVisibility(View.GONE);
+        rotateLoading.start();
+        loadingLayout.setVisibility(View.VISIBLE);
+    }
+
+
     public void stopLoadingAnimation() {
 
         Dlog.d("stopLoadingAnimation");
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                rotateLoading.stop();
-                loadingLayout.setVisibility(View.GONE);
-                gforceFrameLayout.setVisibility(View.VISIBLE);
-            }
-        });
+        loadingLayout.setVisibility(View.GONE);
+        rotateLoading.stop();
+        gforceFrameLayout.setVisibility(View.VISIBLE);
     }
 }

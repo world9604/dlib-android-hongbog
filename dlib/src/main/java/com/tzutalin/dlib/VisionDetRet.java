@@ -35,11 +35,12 @@ public final class VisionDetRet extends EyePoint{
     public int mHightLeft;
     public int mWidthLeft;
 
+    // 눈 전체 크기
+    public int mHight;
+    public int mWidth;
 
 
     private ArrayList<Point> mLandmarkPoints = new ArrayList<>();
-
-
 
     VisionDetRet() {
     }
@@ -79,14 +80,9 @@ public final class VisionDetRet extends EyePoint{
 
         this.mLeftBlur = Math.pow(std.get(0,0)[0], 2);  //double stdDev = std.get(0,0)[0];
 
-
-
         // ear: ----------------------------
 
-
         // rotation: ------------------------
-
-
 
         if(1==1){
             this.accept = true;

@@ -59,37 +59,34 @@ public class VoL {
 
         // 1. 입력으로 들어온 bitmap 이미지(ARGB_8888-32bit)를 Mat 형식으로 바꾼다.
         Utils.bitmapToMat(bitmap, matbit);
+
         // 2.
         Imgproc.cvtColor(matbit, matGray, Imgproc.COLOR_BGR2GRAY);
 
         // 3. int
         Imgproc.Laplacian(matGray, matGrayLapl, CV_8UC1, 3, 1, 0); // -> Gray    CV_16S   CV_16SC3
 
-        //
-        Imgproc.equalizeHist(matGray, matGrayEquli);
+        //Imgproc.equalizeHist(matGray, matGrayEquli);
 
         // converting back to CV_8U
         //Core.convertScaleAbs( matGrayL, matGrayL );
 
         // Imgproc.Laplacian(matGray, matGray, CV_64F, 3,1,0);
 
-
         Core.meanStdDev(matGrayLapl, mean, std);
         int stdDev = (int) (std.get(0, 0)[0]);
         // stdDev = Double.parseDouble(String.format("%.0f",stdDev));
 
-
-
         // -----------------Laplacian 이미지 print
-        matGray.convertTo(matGray, CV_8UC1);  // CV_8UC1
-        Bitmap savebit = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(matGray, savebit);
+        //matGrayLapl.convertTo(matGrayLapl, CV_8UC1);  // CV_8UC1
+        //Bitmap savebit = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        //Utils.matToBitmap(matGrayLapl, savebit);
         //ImageUtils.saveBitmap(savebit, "L" + String.valueOf(stdDev));
 
         // -----------------equalized 이미지 print
-        matGrayEquli.convertTo(matGrayEquli, CV_8UC1);  // CV_8UC1
-        Bitmap savebit2 = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(matGrayEquli, savebit2);
+        //matGrayEquli.convertTo(matGrayEquli, CV_8UC1);  // CV_8UC1
+        //Bitmap savebit2 = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        //Utils.matToBitmap(matGrayEquli, savebit2);
         //ImageUtils.saveBitmap(savebit2, "E" + String.valueOf(stdDev));
 
 

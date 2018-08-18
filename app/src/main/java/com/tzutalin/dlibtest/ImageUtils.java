@@ -49,7 +49,7 @@ public class ImageUtils {
         String fname = ".png";
         Date today = new Date();
         String str = today.toString();
-        fname = "t"+ stringTime +fname;
+        fname = stringTime + fname;
         //fname = str+"t"+ stringTime +fname;
 
         final File file = new File(myDir, fname);
@@ -65,6 +65,44 @@ public class ImageUtils {
             Timber.tag(TAG).e("Exception!", e);
         }
     }
+
+
+    /**
+     * Saves a Bitmap object to disk for analysis.
+     * @param bitmap The bitmap to save.
+     * @param stringTime file Name
+     * @param dirName directory Name
+     */
+    public static void saveBitmap(final Bitmap bitmap, final String stringTime, final String dirName) {
+        final String root =
+                Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "dlib" + File.separator + dirName;
+        Timber.tag(TAG).d(String.format("Saving %dx%d bitmap to %s.", bitmap.getWidth(), bitmap.getHeight(), root));
+        final File myDir = new File(root);
+
+        if (!myDir.mkdirs()) {
+            Timber.tag(TAG).e("Make dir failed");
+        }
+        // file name
+        String fname = ".png";
+        Date today = new Date();
+        String str = today.toString();
+        fname = stringTime + fname;
+        //fname = str+"t"+ stringTime +fname;
+
+        final File file = new File(myDir, fname);
+        if (file.exists()) {
+            file.delete();
+        }
+        try {
+            final FileOutputStream out = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 99, out);
+            out.flush();
+            out.close();
+        } catch (final Exception e) {
+            Timber.tag(TAG).e("Exception!", e);
+        }
+    }
+
 
     /**
      * Converts YUV420 semi-planar data to ARGB 8888 data using the supplied width

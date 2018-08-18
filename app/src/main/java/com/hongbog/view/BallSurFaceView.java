@@ -13,6 +13,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import com.hongbog.viewmodel.Ball;
+import com.tzutalin.dlibtest.Dlog;
 import com.tzutalin.dlibtest.R;
 import com.tzutalin.dlibtest.SensorDTO;
 import com.tzutalin.dlibtest.SensorListener;
@@ -65,7 +66,8 @@ public class BallSurFaceView extends SurfaceView implements SurfaceHolder.Callba
                 mThread.join();
                 retry = false;
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Dlog.e("InterruptedException Message : " + e.getMessage());
+                return;
             }
         }
     }
@@ -104,15 +106,19 @@ public class BallSurFaceView extends SurfaceView implements SurfaceHolder.Callba
 
             while(bExit == false){
                 Canvas canvas = null;
-                try{
+                try {
                     canvas = mHolder.lockCanvas();
                     ball.calcBall(acelX, acelZ, dspWidth, dspHeight, ballSize);
 
-                    synchronized (mHolder){
+                    synchronized (mHolder) {
                         if (canvas == null) break;
                         canvas.drawColor(0, PorterDuff.Mode.CLEAR);
                         canvas.drawBitmap(mBitmap, ball.getBallSrc(), ball.getBallDst(), null);
                     }
+                }catch(IllegalArgumentException ex){
+                    Dlog.e("IllegalArgumentException Message : " + ex.getMessage());
+                    mThread.setExit(true);
+                    return;
                 }finally {
                     if(canvas != null){
                         mHolder.unlockCanvasAndPost(canvas);

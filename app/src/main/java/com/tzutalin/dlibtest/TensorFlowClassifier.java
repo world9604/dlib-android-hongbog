@@ -44,6 +44,8 @@ public class TensorFlowClassifier {
     private static final float THRESHOLD = 0.1f;  // outputs 값의 threshold 설정
     public static final int MULTISCALE_CNT = 3;
 
+//    public static final int[] WIDTHS = {100, 150, 200};
+//    public static final int[] HEIGHTS = {46, 70, 92};
     public static final int[] WIDTHS = {160, 200, 240};
     public static final int[] HEIGHTS = {60, 80, 100};
 
@@ -245,14 +247,11 @@ public class TensorFlowClassifier {
     public ResultProbList Verification(Bundle bundle) {
         long startTime = System.currentTimeMillis();
 
-        ParcelBitmapList leftList = new ParcelBitmapList();
-        ParcelBitmapList rightList = new ParcelBitmapList();
-
         ArrayList<ParcelBitmap> left = bundle.getParcelableArrayList("LeftEyeList");
         ArrayList<ParcelBitmap> right = bundle.getParcelableArrayList("RightEyeList");
 
         // 리스트에서 이미지 꺼내오기
-        for (int num = 0; num < 5; num++) {
+        for (int num = 0; num < left.size(); num++) {
             ParcelBitmap addData = left.get(num);
             bitmap_left[num] = addData.getBitmap();
 
@@ -262,7 +261,7 @@ public class TensorFlowClassifier {
 
         ResultProbList resultList = new ResultProbList();
 
-        for (int num = 0; num < 5; num++) {
+        for (int num = 0; num < left.size(); num++) {
             ResultProb resultPro = new ResultProb();
 
             Bitmap oriLeftBitmap = bitmap_left[num];
@@ -339,5 +338,4 @@ public class TensorFlowClassifier {
 
         return norm_pixels;
     }
-
 }

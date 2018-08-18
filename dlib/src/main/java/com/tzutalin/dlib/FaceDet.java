@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static java.lang.Math.abs;
+
 /**
  * Created by houzhi on 16-10-20.
  * Modified by tzutalin on 16-11-15
@@ -34,14 +36,15 @@ public class FaceDet {
         }
     }
 
-    /*private FaceDet() {}
+    private static FaceDet instance;
 
-    private static class SingleToneHolder {
-        static final FaceDet instance = new FaceDet();
-    }
+    private FaceDet() {}
 
     public static FaceDet getInstance() {
-        return SingleToneHolder.instance;
+        if(instance == null){
+            instance = new FaceDet();
+        }
+        return instance;
     }
 
     public void setmLandMarkPath(String mLandMarkPath) {
@@ -49,17 +52,17 @@ public class FaceDet {
             this.mLandMarkPath = mLandMarkPath;
             jniInit(mLandMarkPath);
         }
-    }*/
+    }
 
     @SuppressWarnings("unused")
-    public FaceDet() {
+    /*public FaceDet() {
         jniInit(mLandMarkPath);
     }
 
     public FaceDet(String landMarkPath) {
         mLandMarkPath = landMarkPath;
         jniInit(mLandMarkPath);
-    }
+    }*/
 
     @Nullable
     @WorkerThread
@@ -116,6 +119,7 @@ public class FaceDet {
             detect.mHightLeft = detect.mEndLeftY - detect.mStartLeftY;
             detect.mWidthLeft = detect.mEndLeftX - detect.mStartLeftX;
 
+
             /**
              * 눈 주위에 일정 거리를 가지지 않고
              * 가득찬 눈의 좌표값을 얻어 온다.
@@ -166,6 +170,10 @@ public class FaceDet {
 
             detect.mHightLeft = detect.mEndLeftY - detect.mStartLeftY;
             detect.mWidthLeft = detect.mEndLeftX - detect.mStartLeftX;
+
+            // 양쪽 눈
+            detect.mWidth = abs(detect.mEndLeftX - detect.mStartRightX);
+            detect.mHight = abs(detect.mEndLeftY - detect.mStartRightY);
         }
 
         return Arrays.asList(detRets);

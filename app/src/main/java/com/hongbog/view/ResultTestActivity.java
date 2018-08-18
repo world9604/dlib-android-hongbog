@@ -127,8 +127,8 @@ public class ResultTestActivity extends AppCompatActivity{
 
                 if(leftBitmap == null || rightBitmap == null) return;
 
-                Bitmap tmpLeftBitmap = Bitmap.createScaledBitmap(leftBitmap, WIDTHS[i], HEIGHTS[i], false);
-                Bitmap tmpRightBitmap = Bitmap.createScaledBitmap(rightBitmap, WIDTHS[i], HEIGHTS[i], false);
+                Bitmap tmpLeftBitmap = Bitmap.createScaledBitmap(leftBitmap, WIDTHS[i], HEIGHTS[i], true);
+                Bitmap tmpRightBitmap = Bitmap.createScaledBitmap(rightBitmap, WIDTHS[i], HEIGHTS[i], true);
 
                 if (i == 0) {
                     rightLowImg.setImageBitmap(tmpRightBitmap);

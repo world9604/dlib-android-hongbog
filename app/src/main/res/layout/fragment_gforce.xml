@@ -21,7 +21,7 @@
         android:layout_height="match_parent"
         android:contentDescription="ball_background_grid"
         android:adjustViewBounds="true"
-        android:scaleType="fitStart"
+        android:scaleType="fitXY"
         android:src="@drawable/grid" />
 
     <com.hongbog.view.BallSurFaceView
