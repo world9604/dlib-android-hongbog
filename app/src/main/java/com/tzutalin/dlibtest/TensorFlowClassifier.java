@@ -56,8 +56,8 @@ public class TensorFlowClassifier {
     float[] midLeftData = new float[WIDTHS[1] * HEIGHTS[1]];
     float[] highLeftData = new float[WIDTHS[2] * HEIGHTS[2]];
 
-    Bitmap bitmap_left[] = new Bitmap[5];
-    Bitmap bitmap_right[] = new Bitmap[5];
+    private Bitmap bitmap_left[] = new Bitmap[5];
+    private Bitmap bitmap_right[] = new Bitmap[5];
 
     // neural network 관련 parameters
     private String[] rightInputNames;  // neural network right 입력 노드 이름
@@ -122,7 +122,7 @@ public class TensorFlowClassifier {
      * @param assetManager
      * @param modelFilename
      * @param labelFilename
-     * @param widhts
+     * @param widths
      * @param heights
      * @param rightInputNames
      * @param leftInputNames
@@ -132,7 +132,7 @@ public class TensorFlowClassifier {
             AssetManager assetManager,
             String modelFilename,
             String labelFilename,
-            int[] widhts,
+            int[] widths,
             int[] heights,
             String[] rightInputNames,
             String[] leftInputNames,
@@ -140,7 +140,7 @@ public class TensorFlowClassifier {
         this.rightInputNames = rightInputNames;
         this.leftInputNames = leftInputNames;
         this.outputNames = outputNames;
-        this.widths = widhts;
+        this.widths = widths;
         this.heights = heights;
 
         // label names 설정
@@ -250,8 +250,13 @@ public class TensorFlowClassifier {
         ArrayList<ParcelBitmap> left = bundle.getParcelableArrayList("LeftEyeList");
         ArrayList<ParcelBitmap> right = bundle.getParcelableArrayList("RightEyeList");
 
+        int bundleSize = left.size();
+
+        Bitmap bitmap_left[] = new Bitmap[bundleSize];
+        Bitmap bitmap_right[] = new Bitmap[bundleSize];
+
         // 리스트에서 이미지 꺼내오기
-        for (int num = 0; num < left.size(); num++) {
+        for (int num = 0; num < bundleSize; num++) {
             ParcelBitmap addData = left.get(num);
             bitmap_left[num] = addData.getBitmap();
 
@@ -261,11 +266,31 @@ public class TensorFlowClassifier {
 
         ResultProbList resultList = new ResultProbList();
 
-        for (int num = 0; num < left.size(); num++) {
+        for (int num = 0; num < bundleSize; num++) {
             ResultProb resultPro = new ResultProb();
 
             Bitmap oriLeftBitmap = bitmap_left[num];
             Bitmap oriRightBitmap = bitmap_right[num];
+
+            for (int i = 0; i < MULTISCALE_CNT; i++) {
+
+                Bitmap tmpLeftBitmap = Bitmap.createScaledBitmap(oriLeftBitmap, WIDTHS[i], HEIGHTS[i], false);
+                Bitmap tmpRightBitmap = Bitmap.createScaledBitmap(oriRightBitmap, WIDTHS[i], HEIGHTS[i], false);
+
+                Dlog.d(i + " right: (" + tmpRightBitmap.getWidth() + "," + tmpRightBitmap.getHeight() + "), " +
+                        "left: (" + tmpLeftBitmap.getWidth() + "," + tmpLeftBitmap.getHeight() + ")");
+
+                if (i == 0) {
+                    lowRightData = grayScaleAndNorm(tmpRightBitmap);
+                    lowLeftData = grayScaleAndNorm(tmpLeftBitmap);
+                } else if (i == 1) {
+                    midRightData = grayScaleAndNorm(tmpRightBitmap);
+                    midLeftData = grayScaleAndNorm(tmpLeftBitmap);
+                } else {
+                    highRightData = grayScaleAndNorm(tmpRightBitmap);
+                    highLeftData = grayScaleAndNorm(tmpLeftBitmap);
+                }
+            }
 
             float[] tempResult = verificationEye(lowRightData, midRightData, highRightData, lowLeftData, midLeftData, highLeftData);
             resultPro.setBitmap(oriLeftBitmap, oriRightBitmap);
@@ -281,7 +306,7 @@ public class TensorFlowClassifier {
     }
 
 
-    /*private static float[] grayScaleAndNorm(Bitmap bitmap) {
+    private static float[] grayScaleAndNorm(Bitmap bitmap) {
         int mWidth = bitmap.getWidth();
         int mHeight = bitmap.getHeight();
 
@@ -298,9 +323,14 @@ public class TensorFlowClassifier {
             norm_pixels[i] = grayPixel / 255.0f;
         }
         return norm_pixels;
-    }*/
+    }
 
 
+    /**
+     * 추후 신경망 모델 업데이트시 Equlization 추가
+     * @param bitmap
+     * @return
+     */
     private float[] grayScale_Equalization_Norm (Bitmap bitmap) {
 
         Mat matbit = new Mat(bitmap.getWidth(), bitmap.getHeight(), CV_32F);  //CV_32F   CV_32FC3 (CV_32SC3: 32bit-float)  CV_8UC4

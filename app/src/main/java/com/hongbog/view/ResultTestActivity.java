@@ -147,7 +147,7 @@ public class ResultTestActivity extends AppCompatActivity{
             // 확률이 가장 큰 클래스 고르기
             float maxValue = -1;
             int result = -1;
-            for (int i = 0; i < 7; i++) {
+            for (int i = 0; i < tempResult.length; i++) {
                 if (maxValue < tempResult[i]) {
                     maxValue = tempResult[i];
                     result = i;
@@ -156,23 +156,23 @@ public class ResultTestActivity extends AppCompatActivity{
 
             String sResult = null;
             if (result == 0) {
-                sResult = "조원태씨~";
+                sResult = "조원태";
             } else if (result == 1) {
-                sResult = "김태인씨~";
+                sResult = "김태인";
             } else if (result == 2) {
-                sResult = "길용현씨~";
+                sResult = "길용현";
             } else if (result == 3) {
-                sResult = "이재선씨~";
+                sResult = "이재선";
             } else if (result == 4) {
-                sResult = "이다희씨~";
+                sResult = "이다희";
             } else if (result == 5) {
-                sResult = "남궁희주씨~";
+                sResult = "남궁희주";
             } else if (result == 6) {
-                sResult = "박홍화씨~";
+                sResult = "박홍화";
             } else if (result == 7) {
-                sResult = "이재원씨~";
+                sResult = "이재원";
             } else if (result == 8) {
-                sResult = "대표님~~";
+                sResult = "남궁종";
             }
 
             if(num==3) resultClassText.append("\n");

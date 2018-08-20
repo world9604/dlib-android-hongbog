@@ -157,8 +157,8 @@ public class CameraConnectionFragment extends Fragment {
     private Size deviceLargestSize;
     private FrameLayout gforceFrameLayout;
 
-    public static final int ENROLL_INPUT_DATA_SIZE = 3;
-    public static final int VERIFY_INPUT_DATA_SIZE = 5;
+    public static int ENROLL_INPUT_DATA_SIZE = 100;
+    public static int VERIFY_INPUT_DATA_SIZE = 5;
 
     private Bitmap bitmap_both[];
     private Bitmap bitmap_left[];

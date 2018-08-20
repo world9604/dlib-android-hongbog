@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.Button;
 import com.hongbog.view.InfoActivity;
 import com.hongbog.view.LoadingActivity;
+import com.hongbog.view.SettingActivity;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
@@ -86,11 +87,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public boolean onOptionsItemSelected(MenuItem item) {
         int selectedId = item.getItemId();
         Dlog.d("onOptionsItemSelected");
+        Intent intent = new Intent();
 
         switch (selectedId){
-            case R.id.developer_mode :
-                Intent intent = new Intent(this, CameraActivity.class);
+            case R.id.develop_mode :
+                intent.setClass(this, CameraActivity.class);
                 intent.putExtra(ACTIVITY_FLOW_EXTRA, DEVELOP_MODE_EXTRA);
+                startActivity(intent);
+                break;
+            case R.id.setting_mode:
+                intent.setClass(this, SettingActivity.class);
+//                intent.putExtra(ACTIVITY_FLOW_EXTRA, DEVELOP_MODE_EXTRA);
                 startActivity(intent);
                 break;
         }

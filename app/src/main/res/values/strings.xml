@@ -16,4 +16,8 @@
     <string name="state_text_check_overlay">눈 모양에 눈을 되어 주세요</string>
     <string name="state_text_check_acel">공을 가운데에 맞추어 주세요</string>
     <string name="state_text_nothing">촬영한 데이터 수 : </string>
+    <string name="verification_size_text">인식 촬영 데이터 수 : </string>
+    <string name="enroll_size_text">등록 촬영 데이터 수 : </string>
+    <string name="setting_btn">설정</string>
+    <string name="not_number_format">숫자 형식이 아닙니다.</string>
 </resources>

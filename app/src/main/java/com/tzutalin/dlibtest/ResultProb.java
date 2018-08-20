@@ -11,7 +11,6 @@ public class ResultProb {
     private float probResult[];
     Bitmap leftBitmap;
     Bitmap rightBitmap;
-    public int numClasses = 7;
 
     public ResultProb() {
         super();

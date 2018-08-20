@@ -122,7 +122,7 @@ public class ResultActivity extends AppCompatActivity {
             // 확률이 가장 큰 클래스 고르기
             float maxValue = -1;
             int result = -1;
-            for (int i = 0; i < 7; i++) {
+            for (int i = 0; i < tempResult.length; i++) {
                 if (maxValue < tempResult[i]) {
                     maxValue = tempResult[i];
                     result = i;
@@ -147,7 +147,7 @@ public class ResultActivity extends AppCompatActivity {
             } else if (result == 7) {
                 sResult = "이재원";
             } else if (result == 8) {
-                sResult = "대표님";
+                sResult = "남궁종";
             }
 
             if(sResult == null) return;
