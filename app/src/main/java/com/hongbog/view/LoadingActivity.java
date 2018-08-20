@@ -102,7 +102,6 @@ public class LoadingActivity extends AppCompatActivity {
 
     private void initTensorAndFaceDet(){
         Dlog.d("initTensorAndFaceDet");
-        Dlog.d("Constants.getFaceShapeModelPath() : " + Constants.getFaceShapeModelPath());
         FaceDet.getInstance().setmLandMarkPath(Constants.getFaceShapeModelPath());
         TensorFlowClassifier.getInstance().initTensorFlowAndLoadModel(getAssets());
     }

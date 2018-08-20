@@ -188,6 +188,8 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
 
     private void drawResizedBitmap(final Bitmap src, final Bitmap dst) {
+        Dlog.d("drawResizedBitmap");
+
         Display getOrient = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
         int orientation = Configuration.ORIENTATION_UNDEFINED;
         Point point = new Point();

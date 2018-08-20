@@ -55,7 +55,7 @@ public class FaceDet {
     }
 
     @SuppressWarnings("unused")
-    /*public FaceDet() {
+   /* public FaceDet() {
         jniInit(mLandMarkPath);
     }
 

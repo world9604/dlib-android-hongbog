@@ -137,9 +137,11 @@ public class CameraActivity extends Activity {
     }
 
 
-
-
-
+    @Override
+    public void onBackPressed() {
+        finish();
+        super.onBackPressed();
+    }
 
     @Override
     protected void onStart() {

@@ -251,34 +251,35 @@ public class CameraConnectionFragment extends Fragment {
         @Override
         public void onSurfaceTextureAvailable(
                 final SurfaceTexture texture, final int width, final int height) {
+            Dlog.d("onSurfaceTextureAvailable");
+
             openCamera(width, height);
-//            eyeOverlayView.setAspectRatio(textureView.mTextureViewWidth, textureView.mTextureViewHeight, deviceLargestSize);
-//            surfaceView.invalidate();
         }
 
         @Override
         public void onSurfaceTextureSizeChanged(
                 final SurfaceTexture texture, final int width, final int height) {
+            Dlog.d("onSurfaceTextureSizeChanged");
+
             configureTransform(width, height);
         }
 
         @Override
         public boolean onSurfaceTextureDestroyed(
                 final SurfaceTexture texture) {
+            Dlog.d("onSurfaceTextureDestroyed");
+
             return true;
         }
 
         @Override
-        public void onSurfaceTextureUpdated(final SurfaceTexture texture) {
-        }
+        public void onSurfaceTextureUpdated(final SurfaceTexture texture) { }
     };
 
 
     @Override
     public void onDestroy() {
         Dlog.d("onDestroy");
-        mSensorManager.unregisterListener(mSensorLis, mGgyroSensor);
-        mSensorManager.unregisterListener(mSensorLis, mLightSensor);
         super.onDestroy();
     }
 
@@ -323,7 +324,6 @@ public class CameraConnectionFragment extends Fragment {
        if (textureView.isAvailable()) {
            // onSurfaceTextureAvailable 이벤트 실행. 이 이벤트 안에서 openCamera()  수행
            openCamera(textureView.getWidth(), textureView.getHeight());
-//           eyeOverlayView.setAspectRatio(textureView.mTextureViewWidth, textureView.mTextureViewHeight, deviceLargestSize);
 
        } else {
             // textureView에 Listener를 등록하고 (setSurfaceTextureListener)
@@ -337,6 +337,8 @@ public class CameraConnectionFragment extends Fragment {
         Dlog.d("onPause");
         closeCamera();
         stopBackgroundThread();
+        mSensorManager.unregisterListener(mSensorLis, mGgyroSensor);
+        mSensorManager.unregisterListener(mSensorLis, mLightSensor);
         super.onPause();
     }
 
@@ -358,13 +360,11 @@ public class CameraConnectionFragment extends Fragment {
                 //Timber.tag(TAG).w("checkSelfPermission CAMERA");
             }
 
-            //full screen method
-            //setAspectRatioTextureView(width, height);
-
             manager.openCamera(cameraId, stateCallback, backgroundHandler);
             //Timber.tag(TAG).d("open Camera");
         } catch (final CameraAccessException e) {
             //Timber.tag(TAG).e("Exception!", e);
+            Dlog.d("CameraAccessException Message : " + e.getMessage());
         } catch (final InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to lock camera opening.", e);
         }
@@ -431,36 +431,6 @@ public class CameraConnectionFragment extends Fragment {
                     .show(getChildFragmentManager(), FRAGMENT_DIALOG);
         }
     }
-
-
-    /**
-     * support full screen in preivew
-     * @param ResolutionWidth
-     * @param ResolutionHeight
-     */
-    /*private void setAspectRatioTextureView( int ResolutionWidth , int ResolutionHeight ){
-        if(ResolutionWidth > ResolutionHeight){
-            int newWidth = DSI_width;
-            int newHeight = ((DSI_width * ResolutionWidth)/ResolutionHeight);
-            updateTextureViewSize(newWidth,newHeight);
-
-        }else {
-            int newWidth = DSI_width;
-            int newHeight = ((DSI_width * ResolutionHeight)/ResolutionWidth);
-            updateTextureViewSize(newWidth,newHeight);
-        }
-    }*/
-
-
-    /**
-     * update preview size
-     * @param viewWidth
-     * @param viewHeight
-     */
-    /*private void updateTextureViewSize(int viewWidth, int viewHeight) {
-        Log.d(TAG, "TextureView Width : " + viewWidth + " TextureView Height : " + viewHeight);
-        textureView.setLayoutParams(new FrameLayout.LayoutParams(viewWidth, viewHeight));
-    }*/
 
 
     /**
@@ -579,6 +549,7 @@ public class CameraConnectionFragment extends Fragment {
                 final CameraCaptureSession session,
                 final CaptureRequest request,
                 final CaptureResult partialResult) {
+//            Dlog.d("onCaptureProgressed");
         }
 
         @Override
@@ -586,6 +557,8 @@ public class CameraConnectionFragment extends Fragment {
                 final CameraCaptureSession session,
                 final CaptureRequest request,
                 final TotalCaptureResult result) {
+//            Dlog.d("onCaptureCompleted");
+
             super.onCaptureCompleted(session, request, result);
         }
     };
