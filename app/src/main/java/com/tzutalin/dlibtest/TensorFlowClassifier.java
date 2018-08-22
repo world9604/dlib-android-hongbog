@@ -56,6 +56,8 @@ public class TensorFlowClassifier {
     float[] midLeftData = new float[WIDTHS[1] * HEIGHTS[1]];
     float[] highLeftData = new float[WIDTHS[2] * HEIGHTS[2]];
 
+    private Executor executor = Executors.newSingleThreadExecutor();
+
     private Bitmap bitmap_left[] = new Bitmap[5];
     private Bitmap bitmap_right[] = new Bitmap[5];
 
@@ -92,8 +94,6 @@ public class TensorFlowClassifier {
 
         if(mAssetManager == null){
             mAssetManager = assetManager;
-
-            Executor executor = Executors.newSingleThreadExecutor();
 
             executor.execute(new Runnable() {
                 @Override

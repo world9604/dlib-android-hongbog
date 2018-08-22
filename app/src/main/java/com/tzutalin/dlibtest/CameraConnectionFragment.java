@@ -55,6 +55,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.MainThread;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
 import android.support.v4.app.ActivityCompat;
@@ -152,7 +153,7 @@ public class CameraConnectionFragment extends Fragment {
     public static final int STOP_ACTIVITY = 6;
 
     private CustomView eyeOverlayView;
-    private RelativeLayout eyeOverlaySurfaceView;
+    private FrameLayout eyeOverlaySurfaceView;
     private TextView mStateTextView;
     private Size deviceLargestSize;
     private FrameLayout gforceFrameLayout;
@@ -296,7 +297,7 @@ public class CameraConnectionFragment extends Fragment {
     public void onViewCreated(final View view, final Bundle savedInstanceState) {
         Dlog.d("onViewCreated");
         textureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        eyeOverlaySurfaceView = (RelativeLayout)view.findViewById(R.id.view);
+        eyeOverlaySurfaceView = (FrameLayout)view.findViewById(R.id.view);
         eyeOverlayView = new CustomView(this);
         eyeOverlaySurfaceView.addView(eyeOverlayView);
     }
@@ -590,6 +591,8 @@ public class CameraConnectionFragment extends Fragment {
             cameraDevice.createCaptureSession( Arrays.asList(surface, reader.getSurface()), new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(final CameraCaptureSession cameraCaptureSession) {
+                            Dlog.d("onConfigured");
+
                             // The camera is already closed
                             if (null == cameraDevice) {
                                 return;
@@ -604,19 +607,24 @@ public class CameraConnectionFragment extends Fragment {
 
                                 // Flash is automatically enabled when necessary.
                                 previewRequestBuilder.set(
-                                        CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+                                        CaptureRequest.CONTROL_AE_MODE,
+                                        CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
 
                                 // Finally, we start displaying the camera preview.
                                 previewRequest = previewRequestBuilder.build();
                                 captureSession.setRepeatingRequest(
                                         previewRequest, captureCallback, backgroundHandler);
+
+
                             } catch (final CameraAccessException e) {
-                                Log.i(TAG, "Exception!", e);
+                                Dlog.e("CameraAccessException Message : " + e.getMessage());
                             }
                         }
                         @Override
                         public void onConfigureFailed(final CameraCaptureSession cameraCaptureSession) {
                             //showToast("Failed");
+                            Dlog.d("onConfigureFailed");
+
                         }
                     },
                     null);

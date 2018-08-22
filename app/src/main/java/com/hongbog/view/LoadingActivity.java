@@ -17,6 +17,7 @@ import com.tzutalin.dlib.FaceDet;
 import com.tzutalin.dlibtest.Dlog;
 import com.tzutalin.dlibtest.R;
 import com.tzutalin.dlibtest.TensorFlowClassifier;
+import com.tzutalin.dlibtest.TensorFlowSimilarityClassifier;
 import com.victor.loading.rotate.RotateLoading;
 
 import hugo.weaving.DebugLog;
@@ -104,6 +105,7 @@ public class LoadingActivity extends AppCompatActivity {
         Dlog.d("initTensorAndFaceDet");
         FaceDet.getInstance().setmLandMarkPath(Constants.getFaceShapeModelPath());
         TensorFlowClassifier.getInstance().initTensorFlowAndLoadModel(getAssets());
+        TensorFlowSimilarityClassifier.getInstance().initTensorFlowAndLoadModel(getAssets());
     }
 
 

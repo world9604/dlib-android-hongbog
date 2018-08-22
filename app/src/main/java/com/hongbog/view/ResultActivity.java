@@ -18,6 +18,7 @@ import com.tzutalin.dlibtest.R;
 import com.tzutalin.dlibtest.ResultProb;
 import com.tzutalin.dlibtest.ResultProbList;
 import com.tzutalin.dlibtest.TensorFlowClassifier;
+import com.tzutalin.dlibtest.TensorFlowSimilarityClassifier;
 import com.victor.loading.rotate.RotateLoading;
 
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ public class ResultActivity extends AppCompatActivity {
     private TextView mTextView;
     private ImageView mLeftImageView;
     private ImageView mRightImageView;
-    private TensorFlowClassifier classifier = TensorFlowClassifier.getInstance();
+    private TensorFlowClassifier classifier;
     private RelativeLayout loadingLayout;
     private RotateLoading rotateLoading;
 
@@ -72,6 +73,7 @@ public class ResultActivity extends AppCompatActivity {
 
         @Override
         protected ResultProbList doInBackground(Bundle... bundles) {
+            classifier = TensorFlowClassifier.getInstance();
             return classifier.Verification(bundles[0]);
         }
 

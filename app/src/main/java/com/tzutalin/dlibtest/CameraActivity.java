@@ -31,6 +31,7 @@ import android.provider.Settings;
 import android.text.Layout;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -65,6 +66,8 @@ public class CameraActivity extends Activity {
     protected void onCreate(final Bundle savedInstanceState) {
         Dlog.d("onCreate");
         super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         setContentView(R.layout.activity_camera);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

@@ -171,8 +171,6 @@ public class OnGetImageListener implements OnImageAvailableListener {
         mOverlayEyeHeight = eyeOverlayView.getEyeHeight();
         mOverlayEyeWidth = eyeOverlayView.getEyeWidth();
 
-        Dlog.d("eyeOverlayView.getWidth() : " + eyeOverlayView.getWidth());
-        Dlog.d("eyeOverlayView.getHeight() : " + eyeOverlayView.getHeight());
     }
 
 
@@ -345,15 +343,24 @@ public class OnGetImageListener implements OnImageAvailableListener {
                 Dlog.d("ret.end_left_y " + ret.end_left_y);
                 Dlog.d("");*/
 
-                float acelX = Float.parseFloat(String.format("%.2f", mSensorDTO.getAccelX()));
-                float acelZ = Float.parseFloat(String.format("%.2f", mSensorDTO.getAccelZ()));
+                Bitmap bitCrop_B;
+                Bitmap bitCrop_L;
+                Bitmap bitCrop_R;
 
-                // 눈 영역만 crop
-                Bitmap bitCrop_B = Bitmap.createBitmap(mBitmap, ret.mStartRightX, ret.mStartRightY, ret.mWidth, ret.mHight);
-                Bitmap bitCrop_L = Bitmap.createBitmap(mBitmap, ret.mStartLeftX, ret.mStartLeftY, ret.mWidthLeft, ret.mHightLeft);
-                Bitmap bitCrop_R = Bitmap.createBitmap(mBitmap, ret.mStartRightX, ret.mStartRightY, ret.mWidthRight, ret.mHightRight);
+                try{
+                    // 눈 영역만 crop
+                    bitCrop_B = Bitmap.createBitmap(mBitmap, ret.mStartRightX, ret.mStartRightY, ret.mWidth, ret.mHight);
+                    bitCrop_L = Bitmap.createBitmap(mBitmap, ret.mStartLeftX, ret.mStartLeftY, ret.mWidthLeft, ret.mHightLeft);
+                    bitCrop_R = Bitmap.createBitmap(mBitmap, ret.mStartRightX, ret.mStartRightY, ret.mWidthRight, ret.mHightRight);
+                }catch (final IllegalArgumentException ex){
+                    Dlog.e("IllegalArgumentException Message : " + ex.getMessage());
+                    break;
+                }
 
                 CheckQuality quality = new CheckQuality(ret, mBitmap, bitCrop_B, bitCrop_L, bitCrop_R);
+
+                float acelX = Float.parseFloat(String.format("%.2f", mSensorDTO.getAccelX()));
+                float acelZ = Float.parseFloat(String.format("%.2f", mSensorDTO.getAccelZ()));
 
                 /**
                  *  눈 모양 오버레이 좌표값과 디텍팅 눈 좌표값을 비교하여 오버레이 안에 눈이 들어와 있는지 확인
@@ -377,7 +384,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
                  */
                 if (!((acelX > -2f && acelX < 2f)
                         && (acelZ > -2f && acelZ < 2f))) {
-                    Dlog.d("acel");
+
                     mMsg = mUiHandler.obtainMessage(CameraConnectionFragment.QUALITY_CHECK);
                     mMsg.obj = STATE_TEXT_CHECK_ACEL;
                     mMsg.sendToTarget();
@@ -387,7 +394,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
                 /**
                  * 얼굴 크기가 너무 작거나 큰것 제외시킨다
                  */
-                else if (!"".equals(quality.acceptScope())) {
+                if (!"".equals(quality.acceptScope())) {
                     Dlog.d("scope");
                     mMsg = mUiHandler.obtainMessage(CameraConnectionFragment.QUALITY_CHECK);
                     mMsg.obj = quality.acceptScope();

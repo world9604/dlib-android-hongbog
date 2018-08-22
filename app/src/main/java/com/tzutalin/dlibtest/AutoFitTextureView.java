@@ -17,6 +17,7 @@
 package com.tzutalin.dlibtest;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.util.AttributeSet;
 import android.view.TextureView;
 
@@ -67,6 +68,7 @@ public class AutoFitTextureView extends TextureView {
     final int width = MeasureSpec.getSize(widthMeasureSpec);
     final int height = MeasureSpec.getSize(heightMeasureSpec);
 
+    Dlog.d("onMeasure");
     if (0 == mRatioWidth || 0 == mRatioHeight) {
 
       // requestLayout 호출하지 않을시 (width, height)가 preview Size
@@ -86,4 +88,5 @@ public class AutoFitTextureView extends TextureView {
       }
     }
   }
+
 }

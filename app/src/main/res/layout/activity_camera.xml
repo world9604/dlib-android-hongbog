@@ -13,7 +13,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<RelativeLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -64,7 +64,7 @@
         android:layout_height="350dp"
         android:layout_alignParentBottom="true"/>-->
 
-    <FrameLayout
+    <!--<FrameLayout
         android:id="@+id/detect_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -92,6 +92,39 @@
         android:id="@+id/loading_layout"
         layout="@layout/activity_loading"
         android:layout_width="match_parent"
+        android:layout_height="match_parent"/>-->
+
+
+    <FrameLayout
+        android:id="@+id/detect_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        />
+
+    <TextView
+        android:id="@+id/state_textview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/unstable_state_text"
+        android:textAlignment="center"
+        android:textColor="@color/Red"
+        android:textSize="@dimen/statebar_text_size"
+        android:background="@android:color/background_dark"
+        android:layout_gravity="top"
+        android:textStyle="bold" />
+
+    <FrameLayout
+        android:id="@+id/gforce_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_gravity="bottom"/>
+
+    <include
+        android:id="@+id/loading_layout"
+        layout="@layout/activity_loading"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-</RelativeLayout>
+</FrameLayout>

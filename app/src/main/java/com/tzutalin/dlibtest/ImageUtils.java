@@ -17,11 +17,15 @@
 package com.tzutalin.dlibtest;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Environment;
+import android.provider.ContactsContract;
 import android.support.annotation.Keep;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.Date;
 
 import timber.log.Timber;
@@ -101,6 +105,34 @@ public class ImageUtils {
         } catch (final Exception e) {
             Timber.tag(TAG).e("Exception!", e);
         }
+    }
+
+
+    /**
+     * Saves a Bitmap object to disk for analysis.
+     * @param dirName directory Name
+     * @return extract Bitmap[] in dirName
+     */
+    public static ArrayList<Bitmap> extractBitmap(final String dirName) {
+        final String root =
+                Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "dlib" + File.separator + dirName;
+
+        if (root == null) return null;
+
+        final File myDir = new File(root);
+
+        if(!myDir.exists()) return  null;
+
+        ArrayList<Bitmap> bitmapArrayList = new ArrayList<>();
+
+        for(File file : myDir.listFiles()){
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+            Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+            bitmapArrayList.add(bitmap);
+        }
+
+        return bitmapArrayList;
     }
 
 
