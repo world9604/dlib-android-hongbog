@@ -73,19 +73,20 @@ public class FaceDet {
 
     @Nullable
     @WorkerThread
-    public List<VisionDetRet> detect(@NonNull Bitmap bitmap) {
+    public List<VisionDetRet> detect(@NonNull Bitmap bitmap){
+
         VisionDetRet[] detRets = jniBitmapDetect(bitmap);
 
-        //
         for (int i=0; i<detRets.length; i++) {
             VisionDetRet detect = detRets[i];
 
             ArrayList<Point> landmark = detect.getFaceLandmarks();
-            Log.d(TAG,"DetRet Landmarks.size"+String.valueOf(landmark.size()));
+            Log.d(TAG,"DetRet Landmarks.size : "+String.valueOf(landmark.size()));
             for (int j=0; j<landmark.size(); j++) {
                 Point point = landmark.get(j);
                 Log.d(TAG, "DetRet point: (" + String.valueOf(point.x) + "," + String.valueOf(point.y) + ")");
             }
+
             //-------------------------------------------
             // 오른쪽 눈 이미지 (36 ~ 41)
             detect.mStartRightX= landmark.get(36).x ;
@@ -100,6 +101,7 @@ public class FaceDet {
             if(landmark.get(41).y > landmark.get(40).y){
                 detect.mEndRightY = landmark.get(41).y;
             }
+
             detect.mHightRight = detect.mEndRightY - detect.mStartRightY;
             detect.mWidthRight = detect.mEndRightX - detect.mStartRightX;
 
@@ -116,6 +118,7 @@ public class FaceDet {
             if(landmark.get(47).y > landmark.get(46).y){
                 detect.mEndLeftY = landmark.get(46).y;
             }
+
             detect.mHightLeft = detect.mEndLeftY - detect.mStartLeftY;
             detect.mWidthLeft = detect.mEndLeftX - detect.mStartLeftX;
 

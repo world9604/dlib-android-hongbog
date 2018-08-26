@@ -136,7 +136,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
         mFaceDet = FaceDet.getInstance();
 //        mFaceDet = new FaceDet(Constants.getFaceShapeModelPath());
-        Dlog.d("mFaceDet : " + (null == mFaceDet));
+        Dlog.d("mFaceDet is Null : " + (null == mFaceDet));
 
         STATE_TEXT_CHECK_OVERLAY = mContext.getString(R.string.state_text_check_overlay);
         STATE_TEXT_CHECK_ACEL = mContext.getString(R.string.state_text_check_acel);
@@ -194,7 +194,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
         getOrient.getSize(point);
         int screen_width = point.x;
         int screen_height = point.y;
-       // Log.i(TAG, String.format("screen size (%d,%d)", screen_width, screen_height));  // screen size (1080,1920)
+
         if (screen_width < screen_height) {
             orientation = Configuration.ORIENTATION_PORTRAIT;
             mScreenRotation = 270;
@@ -213,6 +213,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
         matrix.preTranslate(translateX, translateY);
         float scaleFactor = dst.getHeight() / minDim;
         matrix.postScale(scaleFactor, scaleFactor);
+
         // Rotate around the center if necessary.
         if (mScreenRotation != 0) {
             matrix.postTranslate(-dst.getWidth() / 2.0f, -dst.getHeight() / 2.0f);
@@ -310,12 +311,18 @@ public class OnGetImageListener implements OnImageAvailableListener {
         @Override
         public void run() {
 
-            List<VisionDetRet> results;
+            List<VisionDetRet> results = null;
 
             synchronized (OnGetImageListener.this) {
-                results = mFaceDet.detect(mBitmap);
+                /*try{*/
+                    results = mFaceDet.detect(mBitmap);
+                /*}catch (Exception ex){
+                    mIsComputing = false;
+                    return;
+                }*/
                 if (results == null) {
-                    results = Arrays.asList(new VisionDetRet[]{});
+                    mIsComputing = false;
+                    return;
                 }
             }
 
@@ -352,6 +359,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
                     bitCrop_B = Bitmap.createBitmap(mBitmap, ret.mStartRightX, ret.mStartRightY, ret.mWidth, ret.mHight);
                     bitCrop_L = Bitmap.createBitmap(mBitmap, ret.mStartLeftX, ret.mStartLeftY, ret.mWidthLeft, ret.mHightLeft);
                     bitCrop_R = Bitmap.createBitmap(mBitmap, ret.mStartRightX, ret.mStartRightY, ret.mWidthRight, ret.mHightRight);
+                    Dlog.e("is ret Null? " + (null == ret));
                 }catch (final IllegalArgumentException ex){
                     Dlog.e("IllegalArgumentException Message : " + ex.getMessage());
                     break;

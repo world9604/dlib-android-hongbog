@@ -42,8 +42,7 @@ public final class VisionDetRet extends EyePoint{
 
     private ArrayList<Point> mLandmarkPoints = new ArrayList<>();
 
-    VisionDetRet() {
-    }
+    VisionDetRet() {}
 
     public VisionDetRet(String label, float confidence, int l, int t, int r, int b) {
         mLabel = label;

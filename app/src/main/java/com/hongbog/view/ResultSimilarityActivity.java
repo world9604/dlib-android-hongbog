@@ -70,9 +70,10 @@ public class ResultSimilarityActivity extends AppCompatActivity {
 
         @Override
         protected ResultProbList doInBackground(Bundle... bundles) {
-            ImageUtils.extractBitmap();
-            classifier = TensorFlowSimilarityClassifier.getInstance();
-            return classifier.verificationEye();
+//            ImageUtils.extractBitmap();
+//            classifier = TensorFlowSimilarityClassifier.getInstance();
+//            return classifier.verificationEye();
+            return null;
         }
 
         @Override

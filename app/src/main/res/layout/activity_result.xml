@@ -7,16 +7,16 @@
     tools:context="com.hongbog.view.ResultActivity">
 
     <TextView
-        android:id="@+id/textView5"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/result_text"
-        android:textAlignment="center"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.3" />
+    android:id="@+id/textView5"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="@string/result_text"
+    android:textAlignment="center"
+    android:textSize="24sp"
+    android:textStyle="bold"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintVertical_bias="0.3" />
 
     <ImageView
         android:id="@+id/detect_eye_left_image"

@@ -42,8 +42,6 @@ public class ResultActivity extends AppCompatActivity {
 
         initView();
 
-        startLoadingAnimation();
-
         Intent intent = getIntent();
         Bundle bundle = intent.getExtras();
 
@@ -70,6 +68,11 @@ public class ResultActivity extends AppCompatActivity {
 
 
     private class ClassficationAsyncTask extends AsyncTask<Bundle, Void, ResultProbList> {
+
+        @Override
+        protected void onPreExecute() {
+            startLoadingAnimation();
+        }
 
         @Override
         protected ResultProbList doInBackground(Bundle... bundles) {

@@ -11,30 +11,25 @@ public class ParcelBitmap implements Parcelable {
 
     private Bitmap mSrc = null;
 
-
     public ParcelBitmap(Bitmap src) {
         if (src != null)
             mSrc = Bitmap.createBitmap(src);
     }
 
-
     public final Bitmap getBitmap(){
         return this.mSrc;
     }
-
 
     @Override
     public int describeContents() {
         return 0;
     }
 
-
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         if (mSrc != null)
             this.mSrc.writeToParcel(dest, flags);
     }
-
 
     public static final Creator<ParcelBitmap> CREATOR = new Creator<ParcelBitmap>() {
 
@@ -48,7 +43,6 @@ public class ParcelBitmap implements Parcelable {
             }
             return Result;
         }
-
 
         public ParcelBitmap[] newArray(int size) {
             return new ParcelBitmap[size];

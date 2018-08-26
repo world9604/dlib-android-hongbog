@@ -57,7 +57,7 @@ public class CameraActivity extends Activity {
     private static final String TAG = "i99";
     private static int OVERLAY_PERMISSION_REQ_CODE = 1;
     private long startTime;
-    private RelativeLayout loadingLayout;
+    private FrameLayout loadingLayout;
     private RotateLoading rotateLoading;
     private FrameLayout gforceFrameLayout;
 
@@ -98,7 +98,7 @@ public class CameraActivity extends Activity {
     public void goMain(Bitmap bitmap_left[], Bitmap bitmap_right[]) {
 
         if (bitmap_left == null || bitmap_right == null){
-            Dlog.e("bitmap_left || bitmap_right is Null, So Finish this Activity");
+            Dlog.e("bitmap_left or bitmap_right is Null, So Finish this Activity");
             finish();
         }
 
@@ -136,7 +136,6 @@ public class CameraActivity extends Activity {
 
         startActivity(intent);
         finish();
-
     }
 
 
